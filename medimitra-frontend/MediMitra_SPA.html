@@ -1,0 +1,4366 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MediMitra | AI Health Intelligence</title>
+  <link
+    href="https://fonts.googleapis.com/css2?family=Sora:wght@400;600;700;800&family=DM+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap"
+    rel="stylesheet" />
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <style>
+    :root {
+      --primary: #1A7A4A;
+      --primary-light: #22c55e;
+      --accent: #0D9488;
+      --warning: #D97706;
+      --danger: #DC2626;
+      --safe: #16A34A;
+      --sidebar: #070D19;
+      --bg: #0B1120;
+      --card: rgba(15, 23, 42, 0.8);
+      /* Deep dark blue-ish */
+      --card-hover: rgba(15, 23, 42, 0.95);
+      --border: rgba(255, 255, 255, 0.08);
+      --border-hover: rgba(26, 122, 74, 0.5);
+      --text: #F1F5F9;
+      --text-muted: #64748B;
+      --text-secondary: #94A3B8;
+      --radius: 16px;
+      --radius-lg: 24px;
+      --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+      --shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+      --shadow-green: 0 8px 32px rgba(26, 122, 74, 0.3);
+      --font-display: 'Sora', sans-serif;
+      --font-body: 'DM Sans', sans-serif;
+      --font-mono: 'JetBrains Mono', monospace;
+    }
+
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html {
+      scroll-behavior: smooth;
+    }
+
+    body {
+      font-family: var(--font-body);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    ::-webkit-scrollbar {
+      width: 5px;
+    }
+
+    ::-webkit-scrollbar-track {
+      background: var(--sidebar);
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: var(--primary);
+      border-radius: 10px;
+    }
+
+    /* ── GLASS ── */
+    .glass {
+      background: var(--card);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+    }
+
+    .glass:hover {
+      background: var(--card-hover);
+    }
+
+    .glass-lg {
+      border-radius: var(--radius-lg);
+    }
+
+    /* ── NAVBAR ── */
+    #navbar {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 64px;
+      background: rgba(7, 13, 25, 0.9);
+      backdrop-filter: blur(20px);
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 24px;
+      z-index: 100;
+    }
+
+    .nav-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .nav-logo-icon {
+      width: 38px;
+      height: 38px;
+      background: linear-gradient(135deg, var(--primary), #22c55e);
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-shadow: 0 4px 16px rgba(26, 122, 74, 0.4);
+    }
+
+    .nav-logo-icon i {
+      color: #fff;
+      font-size: 18px;
+    }
+
+    .nav-brand {
+      font-family: var(--font-display);
+      font-weight: 800;
+      font-size: 20px;
+      color: #fff;
+    }
+
+    .nav-brand span {
+      color: var(--primary);
+    }
+
+    .nav-right {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .nav-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: var(--text-secondary);
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: var(--transition);
+      font-size: 14px;
+    }
+
+    .nav-btn:hover {
+      background: var(--card-hover);
+      color: var(--text);
+    }
+
+    .lang-select {
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: var(--text-secondary);
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      cursor: pointer;
+      font-family: var(--font-body);
+      outline: none;
+    }
+
+    .emergency-btn {
+      background: var(--danger);
+      color: #fff;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-weight: 700;
+      font-size: 12px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      animation: pulse-red 2s infinite;
+      letter-spacing: 0.5px;
+    }
+
+    @keyframes pulse-red {
+
+      0%,
+      100% {
+        box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.5);
+      }
+
+      50% {
+        box-shadow: 0 0 0 8px rgba(220, 38, 38, 0);
+      }
+    }
+
+    .hamburger {
+      display: none;
+    }
+
+    /* ── SIDEBAR ── */
+    #sidebar {
+      position: fixed;
+      top: 64px;
+      left: 0;
+      bottom: 0;
+      width: 240px;
+      background: var(--sidebar);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      padding: 24px 12px;
+      z-index: 90;
+      overflow-y: auto;
+    }
+
+    .sidebar-section-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      color: var(--text-muted);
+      text-transform: uppercase;
+      padding: 0 12px;
+      margin: 16px 0 8px;
+    }
+
+    .nav-item {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 12px 16px;
+      border-radius: 10px;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      font-family: var(--font-body);
+      font-size: 14px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: var(--transition);
+      border-left: 3px solid transparent;
+      text-align: left;
+    }
+
+    .nav-item:hover {
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--text);
+    }
+
+    .nav-item.active {
+      background: rgba(26, 122, 74, 0.15);
+      color: var(--primary-light);
+      border-left-color: var(--primary);
+    }
+
+    .nav-item i {
+      width: 18px;
+      text-align: center;
+      font-size: 15px;
+    }
+
+    .sidebar-footer {
+      margin-top: auto;
+      padding: 16px;
+      border-top: 1px solid var(--border);
+    }
+
+    .sidebar-footer p {
+      font-size: 10px;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    /* ── MAIN ── */
+    #main {
+      margin-left: 240px;
+      padding-top: 64px;
+      min-height: 100vh;
+    }
+
+    .section {
+      display: none;
+      padding: 32px;
+    }
+
+    .section.active {
+      display: block;
+      animation: fadeUp 0.4s ease;
+    }
+
+    @keyframes fadeUp {
+      from {
+        opacity: 0;
+        transform: translateY(12px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .section-header {
+      display: flex;
+      align-items: flex-start;
+      justify-content: space-between;
+      margin-bottom: 28px;
+    }
+
+    .section-title {
+      font-family: var(--font-display);
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--text);
+    }
+
+    .section-subtitle {
+      color: var(--text-muted);
+      font-size: 14px;
+      margin-top: 4px;
+    }
+
+    .history-btn {
+      position: relative;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: var(--text-secondary);
+      cursor: pointer;
+      flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: var(--transition);
+      font-size: 15px;
+    }
+
+    .history-btn:hover {
+      background: var(--card-hover);
+      color: var(--text);
+      border-color: var(--primary);
+    }
+
+    .history-badge {
+      position: absolute;
+      top: -4px;
+      right: -4px;
+      background: var(--primary);
+      color: #fff;
+      font-size: 9px;
+      font-weight: 700;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* ── BUTTONS ── */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 12px 24px;
+      border-radius: 10px;
+      border: none;
+      font-family: var(--font-body);
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition);
+      text-decoration: none;
+    }
+
+    .btn-primary {
+      background: var(--primary);
+      color: #fff;
+      box-shadow: 0 4px 16px rgba(26, 122, 74, 0.35);
+    }
+
+    .btn-primary:hover {
+      background: #166038;
+      box-shadow: var(--shadow-green);
+      transform: translateY(-1px);
+    }
+
+    .btn-primary:disabled {
+      background: #2d4a3a;
+      color: var(--text-muted);
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+
+    .btn-secondary {
+      background: var(--card);
+      border: 1px solid var(--border);
+      color: var(--text-secondary);
+    }
+
+    .btn-secondary:hover {
+      background: var(--card-hover);
+      color: var(--text);
+    }
+
+    .btn-danger {
+      background: rgba(220, 38, 38, 0.15);
+      color: #f87171;
+      border: 1px solid rgba(220, 38, 38, 0.3);
+    }
+
+    .btn-full {
+      width: 100%;
+      justify-content: center;
+      padding: 14px;
+      font-size: 15px;
+      border-radius: 12px;
+    }
+
+    /* ── INPUTS ── */
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .input-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-secondary);
+    }
+
+    .input,
+    .select,
+    .textarea {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 12px 14px;
+      color: var(--text);
+      font-family: var(--font-body);
+      font-size: 14px;
+      outline: none;
+      transition: var(--transition);
+      width: 100%;
+    }
+
+    .input:focus,
+    .select:focus,
+    .textarea:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(26, 122, 74, 0.15);
+    }
+
+    .textarea {
+      resize: vertical;
+      min-height: 130px;
+      line-height: 1.6;
+    }
+
+    .select option {
+      background: #1a2332;
+    }
+
+    /* ── CHIPS ── */
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 6px 14px;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: var(--transition);
+      background: var(--card);
+      color: var(--text-secondary);
+    }
+
+    .chip:hover,
+    .chip.active {
+      background: rgba(26, 122, 74, 0.15);
+      border-color: var(--primary);
+      color: var(--primary-light);
+    }
+
+    .chip-remove {
+      cursor: pointer;
+      color: var(--text-muted);
+      font-size: 11px;
+    }
+
+    .chip-remove:hover {
+      color: var(--danger);
+    }
+
+    /* ── CARDS ── */
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 24px;
+    }
+
+    .card-lg {
+      padding: 28px;
+      border-radius: var(--radius-lg);
+    }
+
+    /* ── TABS ── */
+    .tabs {
+      display: flex;
+      gap: 4px;
+      background: rgba(255, 255, 255, 0.04);
+      border-radius: 10px;
+      padding: 4px;
+      margin-bottom: 20px;
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 9px;
+      border-radius: 7px;
+      border: none;
+      background: transparent;
+      color: var(--text-muted);
+      font-family: var(--font-body);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .tab-btn.active {
+      background: var(--primary);
+      color: #fff;
+    }
+
+    .tab-panel {
+      display: none;
+    }
+
+    .tab-panel.active {
+      display: block;
+      animation: fadeUp 0.3s ease;
+    }
+
+    /* ── RESULT CARD ── */
+    .result-card {
+      border-radius: var(--radius);
+      padding: 20px;
+      border: 1px solid var(--border);
+      background: var(--card);
+      border-left: 4px solid var(--primary);
+    }
+
+    .result-card.safe {
+      border-left-color: var(--safe);
+    }
+
+    .result-card.warning {
+      border-left-color: var(--warning);
+    }
+
+    .result-card.danger {
+      border-left-color: var(--danger);
+    }
+
+    /* ── BADGE ── */
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+
+    .badge-safe {
+      background: rgba(22, 163, 74, 0.15);
+      color: #4ade80;
+    }
+
+    .badge-warning {
+      background: rgba(217, 119, 6, 0.15);
+      color: #fbbf24;
+    }
+
+    .badge-danger {
+      background: rgba(220, 38, 38, 0.15);
+      color: #f87171;
+    }
+
+    .badge-info {
+      background: rgba(59, 130, 246, 0.15);
+      color: #60a5fa;
+    }
+
+    .badge-purple {
+      background: rgba(139, 92, 246, 0.15);
+      color: #a78bfa;
+    }
+
+    /* ── PROGRESS BAR ── */
+    .progress-bar {
+      height: 6px;
+      border-radius: 3px;
+      background: rgba(255, 255, 255, 0.08);
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      border-radius: 3px;
+      background: linear-gradient(90deg, var(--primary), var(--primary-light));
+      transition: width 0.8s ease;
+    }
+
+    /* ── STEPPER ── */
+    .stepper {
+      display: flex;
+      align-items: center;
+      gap: 0;
+      margin-bottom: 28px;
+    }
+
+    .step {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 1;
+    }
+
+    .step-circle {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      font-weight: 700;
+      flex-shrink: 0;
+      border: 2px solid var(--border);
+      background: var(--card);
+      color: var(--text-muted);
+      transition: var(--transition);
+    }
+
+    .step.active .step-circle {
+      border-color: var(--primary);
+      background: var(--primary);
+      color: #fff;
+    }
+
+    .step.done .step-circle {
+      border-color: var(--safe);
+      background: var(--safe);
+      color: #fff;
+    }
+
+    .step-label {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+
+    .step.active .step-label,
+    .step.done .step-label {
+      color: var(--text);
+    }
+
+    .step-line {
+      flex: 1;
+      height: 2px;
+      background: var(--border);
+      margin: 0 8px;
+    }
+
+    .step-line.done {
+      background: var(--primary);
+    }
+
+    /* ── UPLOAD ZONE ── */
+    .upload-zone {
+      border: 2px dashed rgba(26, 122, 74, 0.4);
+      border-radius: var(--radius-lg);
+      padding: 48px;
+      text-align: center;
+      cursor: pointer;
+      transition: var(--transition);
+      background: rgba(26, 122, 74, 0.04);
+    }
+
+    .upload-zone:hover,
+    .upload-zone.drag-over {
+      border-color: var(--primary);
+      background: rgba(26, 122, 74, 0.1);
+    }
+
+    .upload-icon {
+      font-size: 48px;
+      color: var(--primary);
+      margin-bottom: 16px;
+      opacity: 0.8;
+    }
+
+    /* ── SCORE CIRCLE ── */
+    .score-circle {
+      width: 140px;
+      height: 140px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      position: relative;
+      margin: 0 auto 16px;
+    }
+
+    .score-circle svg {
+      position: absolute;
+      top: 0;
+      left: 0;
+      transform: rotate(-90deg);
+    }
+
+    .score-number {
+      font-family: var(--font-display);
+      font-size: 36px;
+      font-weight: 800;
+      line-height: 1;
+    }
+
+    .score-label {
+      font-size: 11px;
+      color: var(--text-muted);
+      font-weight: 600;
+      letter-spacing: 0.5px;
+      margin-top: 2px;
+    }
+
+    /* ── INTERACTION MATRIX ── */
+    .matrix-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+
+    .matrix-table th,
+    .matrix-table td {
+      padding: 10px 14px;
+      border: 1px solid var(--border);
+      text-align: center;
+    }
+
+    .matrix-table th {
+      background: rgba(255, 255, 255, 0.05);
+      font-weight: 700;
+      color: var(--text-secondary);
+    }
+
+    .matrix-table td {
+      background: var(--card);
+    }
+
+    .matrix-table .cell-na {
+      background: rgba(255, 255, 255, 0.02);
+      color: var(--text-muted);
+    }
+
+    .matrix-cell-safe {
+      color: #4ade80;
+    }
+
+    .matrix-cell-warn {
+      color: #fbbf24;
+      cursor: help;
+    }
+
+    .matrix-cell-danger {
+      color: #f87171;
+      cursor: help;
+    }
+
+    /* ── SLIDER ── */
+    .slider {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 6px;
+      border-radius: 3px;
+      background: linear-gradient(90deg, #16a34a 0%, #d97706 50%, #dc2626 100%);
+      outline: none;
+      cursor: pointer;
+    }
+
+    .slider::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 20px;
+      height: 20px;
+      border-radius: 50%;
+      background: #fff;
+      border: 3px solid var(--primary);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
+      cursor: pointer;
+    }
+
+    /* ── TOAST ── */
+    #toast-container {
+      position: fixed;
+      bottom: 24px;
+      right: 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      z-index: 9999;
+    }
+
+    .toast {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 18px;
+      border-radius: 12px;
+      min-width: 280px;
+      background: #1a2332;
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow);
+      animation: slideInRight 0.3s ease;
+      font-size: 14px;
+    }
+
+    @keyframes slideInRight {
+      from {
+        opacity: 0;
+        transform: translateX(40px);
+      }
+
+      to {
+        opacity: 1;
+        transform: translateX(0);
+      }
+    }
+
+    .toast.success {
+      border-left: 4px solid var(--safe);
+    }
+
+    .toast.warning {
+      border-left: 4px solid var(--warning);
+    }
+
+    .toast.error {
+      border-left: 4px solid var(--danger);
+    }
+
+    .toast.info {
+      border-left: 4px solid #3b82f6;
+    }
+
+    .toast-close {
+      margin-left: auto;
+      cursor: pointer;
+      color: var(--text-muted);
+      font-size: 12px;
+    }
+
+    /* ── HISTORY PANEL ── */
+    #history-panel {
+      position: fixed;
+      top: 64px;
+      right: 0;
+      bottom: 0;
+      width: 360px;
+      background: var(--sidebar);
+      border-left: 1px solid var(--border);
+      z-index: 80;
+      transform: translateX(100%);
+      transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+      display: flex;
+      flex-direction: column;
+    }
+
+    #history-panel.open {
+      transform: translateX(0);
+    }
+
+    #history-overlay {
+      position: fixed;
+      inset: 64px 0 0 0;
+      background: rgba(0, 0, 0, 0.5);
+      z-index: 79;
+      display: none;
+    }
+
+    #history-overlay.show {
+      display: block;
+    }
+
+    .history-header {
+      padding: 24px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .history-title {
+      font-family: var(--font-display);
+      font-size: 18px;
+      font-weight: 700;
+    }
+
+    .history-close {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: var(--card);
+      border: 1px solid var(--border);
+      cursor: pointer;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: var(--transition);
+    }
+
+    .history-close:hover {
+      color: var(--text);
+    }
+
+    .history-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px;
+    }
+
+    .history-entry {
+      padding: 14px;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      background: var(--card);
+      margin-bottom: 10px;
+      cursor: pointer;
+      transition: var(--transition);
+    }
+
+    .history-entry:hover {
+      border-color: var(--primary);
+      background: var(--card-hover);
+    }
+
+    .history-entry-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 6px;
+    }
+
+    .history-entry-time {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .history-entry-summary {
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text);
+      margin-bottom: 8px;
+    }
+
+    .history-entry-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .history-empty {
+      text-align: center;
+      padding: 48px 24px;
+      color: var(--text-muted);
+    }
+
+    .history-empty i {
+      font-size: 40px;
+      margin-bottom: 16px;
+      opacity: 0.4;
+      display: block;
+    }
+
+    /* ── SKELETON ── */
+    .skeleton {
+      background: linear-gradient(90deg, rgba(255, 255, 255, 0.04) 25%, rgba(255, 255, 255, 0.08) 50%, rgba(255, 255, 255, 0.04) 75%);
+      background-size: 200% 100%;
+      border-radius: 8px;
+      animation: shimmer 1.5s infinite;
+    }
+
+    @keyframes shimmer {
+      0% {
+        background-position: 200% 0;
+      }
+
+      100% {
+        background-position: -200% 0;
+      }
+    }
+
+    /* ── GRID ── */
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+    }
+
+    .grid-3 {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 20px;
+    }
+
+    .grid-4 {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 20px;
+    }
+
+    /* ── RADIO CARDS ── */
+    .radio-cards {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+
+    .radio-card {
+      flex: 1;
+      min-width: 100px;
+    }
+
+    .radio-card input {
+      display: none;
+    }
+
+    .radio-card-label {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      padding: 14px 10px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--card);
+      cursor: pointer;
+      transition: var(--transition);
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-muted);
+      text-align: center;
+    }
+
+    .radio-card input:checked+.radio-card-label {
+      border-color: var(--primary);
+      background: rgba(26, 122, 74, 0.15);
+      color: var(--primary-light);
+    }
+
+    .radio-card-label i {
+      font-size: 18px;
+    }
+
+    /* ── 7 DAY PLAN ── */
+    .day-tabs {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+
+    .day-tab {
+      padding: 8px 16px;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      background: var(--card);
+      color: var(--text-muted);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition);
+      font-family: var(--font-body);
+    }
+
+    .day-tab.active {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: #fff;
+    }
+
+    .day-plan-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+
+    .day-plan-card {
+      padding: 20px;
+      border-radius: 12px;
+      border-left: 4px solid;
+      background: var(--card);
+      border-top: 1px solid var(--border);
+      border-right: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .day-plan-card.morning {
+      border-left-color: var(--warning);
+    }
+
+    .day-plan-card.meal {
+      border-left-color: var(--safe);
+    }
+
+    .day-plan-card.exercise {
+      border-left-color: var(--accent);
+    }
+
+    .day-plan-card.wellness {
+      border-left-color: #3b82f6;
+    }
+
+    .day-plan-title {
+      font-size: 13px;
+      font-weight: 700;
+      margin-bottom: 12px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .day-plan-item {
+      font-size: 13px;
+      color: var(--text-secondary);
+      padding: 4px 0;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    }
+
+    .day-plan-item:last-child {
+      border-bottom: none;
+    }
+
+    /* ── SEASONAL BANNER ── */
+    .season-banner {
+      border-radius: var(--radius-lg);
+      padding: 36px;
+      margin-bottom: 24px;
+      position: relative;
+      overflow: hidden;
+      min-height: 180px;
+      display: flex;
+      align-items: center;
+      gap: 24px;
+    }
+
+    .season-banner.monsoon {
+      background: linear-gradient(135deg, #1e3a5f, #0d9488);
+    }
+
+    .season-banner.winter {
+      background: linear-gradient(135deg, #1e293b, #334155);
+    }
+
+    .season-banner.summer {
+      background: linear-gradient(135deg, #7c2d12, #ea580c);
+    }
+
+    .season-icon {
+      font-size: 64px;
+      opacity: 0.9;
+    }
+
+    .season-content {
+      flex: 1;
+    }
+
+    .season-location {
+      font-size: 13px;
+      color: rgba(255, 255, 255, 0.7);
+      margin-bottom: 6px;
+    }
+
+    .season-name {
+      font-family: var(--font-display);
+      font-size: 32px;
+      font-weight: 800;
+      color: #fff;
+      margin-bottom: 8px;
+    }
+
+    .season-alert {
+      font-size: 15px;
+      color: rgba(255, 255, 255, 0.9);
+    }
+
+    /* ── NEARBY MAP ── */
+    .nearby-layout {
+      display: grid;
+      grid-template-columns: 420px 1fr;
+      gap: 0;
+      height: calc(100vh - 128px);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      border: 1px solid var(--border);
+    }
+
+    .nearby-list {
+      background: var(--sidebar);
+      border-right: 1px solid var(--border);
+      overflow-y: auto;
+      padding: 20px;
+    }
+
+    .nearby-map {
+      background: #1a2332;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    .place-card {
+      padding: 14px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--card);
+      margin-bottom: 10px;
+      cursor: pointer;
+      transition: var(--transition);
+      border-left: 4px solid transparent;
+    }
+
+    .place-card:hover {
+      background: var(--card-hover);
+    }
+
+    .place-card.hospital {
+      border-left-color: var(--danger);
+    }
+
+    .place-card.clinic {
+      border-left-color: var(--warning);
+    }
+
+    .place-card.pharmacy {
+      border-left-color: var(--safe);
+    }
+
+    .place-name {
+      font-weight: 700;
+      font-size: 14px;
+      margin-bottom: 4px;
+    }
+
+    .place-address {
+      font-size: 12px;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+    }
+
+    .place-meta {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .filter-pills {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+
+    .filter-pill {
+      padding: 6px 14px;
+      border-radius: 20px;
+      border: 1px solid var(--border);
+      background: var(--card);
+      color: var(--text-muted);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: var(--transition);
+      font-family: var(--font-body);
+    }
+
+    .filter-pill.active {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: #fff;
+    }
+
+    /* ── MOBILE ── */
+    #mobile-overlay {
+      display: none;
+      position: fixed;
+      inset: 64px 0 0 0;
+      background: rgba(0, 0, 0, 0.6);
+      z-index: 89;
+    }
+
+    @media (max-width: 1024px) {
+      .hamburger {
+        display: flex;
+      }
+
+      #sidebar {
+        transform: translateX(-100%);
+        transition: transform 0.3s ease;
+      }
+
+      #sidebar.open {
+        transform: translateX(0);
+      }
+
+      #main {
+        margin-left: 0;
+      }
+
+      .grid-2 {
+        grid-template-columns: 1fr;
+      }
+
+      .grid-3 {
+        grid-template-columns: 1fr;
+      }
+
+      .grid-4 {
+        grid-template-columns: 1fr;
+      }
+
+      #grid-features {
+        grid-template-columns: 1fr !important;
+      }
+
+      .day-plan-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .nearby-layout {
+        grid-template-columns: 1fr;
+        height: auto;
+      }
+
+      .section {
+        padding: 20px;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .radio-cards {
+        flex-direction: column;
+      }
+
+      .radio-card {
+        min-width: 100%;
+      }
+    }
+
+    /* ── DASHBOARD BANNER ── */
+    .dashboard-banner {
+      background: linear-gradient(135deg, #0a2a1a 0%, #0b1120 60%, #1a2332 100%);
+      border-radius: 24px;
+      padding: 48px;
+      margin-bottom: 32px;
+      border: 1px solid rgba(26, 122, 74, 0.2);
+      position: relative;
+      overflow: hidden;
+      color: #fff;
+    }
+
+    body.light-mode .dashboard-banner {
+      background: linear-gradient(135deg, #f0fdf4 0%, #ffffff 60%, #f1f5f9 100%);
+      border-color: rgba(26, 122, 74, 0.1);
+      color: #0f172a;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.05);
+    }
+
+    .banner-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      background: rgba(26, 122, 74, 0.2);
+      border: 1px solid rgba(26, 122, 74, 0.3);
+      border-radius: 20px;
+      padding: 5px 14px;
+      font-size: 12px;
+      font-weight: 700;
+      color: #4ade80;
+      letter-spacing: 0.5px;
+      margin-bottom: 20px;
+    }
+
+    body.light-mode .banner-tag {
+      background: rgba(22, 101, 52, 0.1);
+      color: #166534;
+    }
+
+    @keyframes pulse-green {
+      0% {
+        box-shadow: 0 0 0 0 rgba(74, 222, 128, 0.4);
+      }
+
+      70% {
+        box-shadow: 0 0 0 10px rgba(74, 222, 128, 0);
+      }
+
+      100% {
+        box-shadow: 0 0 0 0 rgba(74, 222, 128, 0);
+      }
+    }
+
+    .banner-title {
+      font-family: var(--font-display);
+      font-size: 48px;
+      font-weight: 800;
+      line-height: 1.15;
+      margin-bottom: 16px;
+      color: inherit;
+    }
+
+    .banner-title span {
+      color: #22c55e;
+    }
+
+    .banner-desc {
+      font-size: 16px;
+      line-height: 1.7;
+      margin-bottom: 28px;
+      max-width: 480px;
+      color: var(--text-secondary);
+    }
+
+    body.light-mode .banner-desc {
+      color: #475569;
+    }
+
+    .banner-chips {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .banner-info-chip {
+      background: rgba(255, 255, 255, 0.07);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 12px;
+      padding: 10px 18px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    body.light-mode .banner-info-chip {
+      background: #f8fafc;
+      border-color: #e2e8f0;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02);
+    }
+
+    .banner-info-chip span:first-child {
+      color: var(--primary-light);
+      font-weight: 800;
+      font-size: 16px;
+    }
+
+    body.light-mode .banner-info-chip span:first-child {
+      color: var(--primary);
+    }
+
+    .banner-info-chip span:last-child {
+      font-size: 12px;
+      color: var(--text-muted);
+    }
+
+    /* Floating icons in banner */
+    .banner-icons {
+      position: absolute;
+      top: 0;
+      right: 0;
+      bottom: 0;
+      width: 40%;
+      pointer-events: none;
+      opacity: 0.15;
+      z-index: 0;
+    }
+
+    body.light-mode .banner-icons {
+      opacity: 0.2;
+    }
+
+    .dna-icon {
+      position: absolute;
+      right: 40px;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 140px;
+      color: #1a7a4a;
+      animation: floatUpAnim 6s ease-in-out infinite;
+    }
+
+    .micro-icon {
+      position: absolute;
+      right: 160px;
+      top: 30%;
+      font-size: 80px;
+      color: #22c55e;
+      animation: floatDownAnim 8s ease-in-out infinite;
+    }
+
+    @keyframes floatUpAnim {
+
+      0%,
+      100% {
+        margin-top: -15px;
+      }
+
+      50% {
+        margin-top: 15px;
+      }
+    }
+
+    @keyframes floatDownAnim {
+
+      0%,
+      100% {
+        margin-top: 15px;
+      }
+
+      50% {
+        margin-top: -15px;
+      }
+    }
+
+    /* SPLASH SCREEN */
+    #splash-screen {
+      position: fixed;
+      inset: 0;
+      background: #0b1120;
+      z-index: 10000;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+      overflow: hidden;
+    }
+
+    #splash-screen.hidden {
+      opacity: 0;
+      visibility: hidden;
+      transform: scale(1.1);
+      pointer-events: none;
+    }
+
+    .splash-bg {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(-45deg, #0b1120, #0a2a1a, #0b1120, #0d3a2a);
+      background-size: 400% 400%;
+      opacity: 0.8;
+      animation: flowing 12s ease infinite;
+    }
+
+    @keyframes flowing {
+      0% {
+        background-position: 0% 50%;
+      }
+
+      50% {
+        background-position: 100% 50%;
+      }
+
+      100% {
+        background-position: 0% 50%;
+      }
+    }
+
+    .splash-blob {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(80px);
+      opacity: 0.25;
+      animation: moveBlob 20s infinite alternate;
+    }
+
+    .blob-1 {
+      width: 400px;
+      height: 400px;
+      background: #22c55e;
+      top: -100px;
+      left: -100px;
+    }
+
+    .blob-2 {
+      width: 300px;
+      height: 300px;
+      background: #1a7a4a;
+      bottom: -50px;
+      right: -50px;
+      animation-duration: 15s;
+    }
+
+    .blob-3 {
+      width: 350px;
+      height: 350px;
+      background: #3b82f6;
+      top: 40%;
+      left: 30%;
+      animation-duration: 18s;
+      opacity: 0.1;
+    }
+
+    @keyframes moveBlob {
+      to {
+        transform: translate(150px, 150px) rotate(20deg);
+      }
+    }
+
+    @keyframes pulseSplash {
+      0% {
+        opacity: 0.2;
+        transform: scale(1);
+      }
+
+      100% {
+        opacity: 0.4;
+        transform: scale(1.1);
+      }
+    }
+
+    .splash-content {
+      position: relative;
+      z-index: 10;
+      text-align: center;
+      max-width: 600px;
+      padding: 20px;
+    }
+
+    .splash-hello {
+      font-family: var(--font-display);
+      font-size: 84px;
+      font-weight: 900;
+      line-height: 1;
+      margin-bottom: 24px;
+      background: linear-gradient(135deg, #4ade80, #22c55e, #10b981, #22c55e, #4ade80);
+      background-size: 200% auto;
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+      animation: slideInUp 1.2s cubic-bezier(0.23, 1, 0.32, 1) forwards, shimmer 4s linear infinite;
+      opacity: 0;
+      text-shadow: 0 10px 30px rgba(34, 197, 94, 0.15);
+    }
+
+    @keyframes shimmer {
+      to {
+        background-position: 200% center;
+      }
+    }
+
+    .splash-subtitle {
+      color: rgba(255, 255, 255, 0.5);
+      font-size: 20px;
+      font-weight: 500;
+      margin-bottom: 48px;
+      animation: slideInUp 1s cubic-bezier(0.23, 1, 0.32, 1) forwards 0.2s;
+      opacity: 0;
+    }
+
+    .splash-btn {
+      padding: 16px 44px;
+      font-size: 18px;
+      font-weight: 700;
+      color: #fff;
+      background: rgba(255, 255, 255, 0.05);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 50px;
+      cursor: pointer;
+      backdrop-filter: blur(10px);
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+      opacity: 0;
+      animation: slideInUp 1s cubic-bezier(0.23, 1, 0.32, 1) forwards 0.4s;
+    }
+
+    .splash-btn:hover {
+      background: #22c55e;
+      border-color: #22c55e;
+      transform: translateY(-3px) scale(1.05);
+      box-shadow: 0 15px 35px rgba(34, 197, 94, 0.4);
+    }
+
+    @keyframes slideInUp {
+      from {
+        transform: translateY(30px);
+        opacity: 0;
+      }
+
+      to {
+        transform: translateY(0);
+        opacity: 1;
+      }
+    }
+
+    /* ── FEATURE CARDS DASHBOARD ── */
+    .feature-card {
+      padding: 24px;
+      border-radius: var(--radius-lg);
+      background: var(--card);
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      /* Subtle border for deep cards */
+      cursor: pointer;
+      transition: var(--transition);
+      position: relative;
+      overflow: hidden;
+      min-height: 220px;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.2);
+    }
+
+    .feature-card::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 80px;
+      height: 80px;
+      border-radius: 0 0 0 80px;
+      opacity: 0.07;
+      transition: var(--transition);
+    }
+
+    .feature-card:hover {
+      transform: translateY(-6px);
+      border-color: rgba(26, 122, 74, 0.4);
+      box-shadow: var(--shadow-green);
+    }
+
+    .feature-card:hover::before {
+      width: 120px;
+      height: 120px;
+      opacity: 0.12;
+    }
+
+    .feature-icon {
+      width: 56px;
+      height: 56px;
+      border-radius: 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      margin-bottom: 16px;
+      transition: var(--transition);
+    }
+
+    .feature-card:hover .feature-icon {
+      transform: scale(1.1) rotate(-5deg);
+    }
+
+    .feature-name {
+      font-family: var(--font-display);
+      font-size: 17px;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+
+    .feature-desc {
+      font-size: 13px;
+      color: var(--text-muted);
+      line-height: 1.5;
+      margin-bottom: 16px;
+    }
+
+    .feature-link {
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--primary-light);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    /* BMI chip */
+    .bmi-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .bmi-underweight {
+      background: rgba(59, 130, 246, 0.15);
+      color: #60a5fa;
+    }
+
+    .bmi-normal {
+      background: rgba(22, 163, 74, 0.15);
+      color: #4ade80;
+    }
+
+    .bmi-overweight {
+      background: rgba(217, 119, 6, 0.15);
+      color: #fbbf24;
+    }
+
+    .bmi-obese {
+      background: rgba(220, 38, 38, 0.15);
+      color: #f87171;
+    }
+
+    /* Medicine chip tags */
+    .med-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 12px;
+      border-radius: 20px;
+      background: rgba(26, 122, 74, 0.12);
+      border: 1px solid rgba(26, 122, 74, 0.3);
+      color: var(--primary-light);
+      font-size: 13px;
+      font-weight: 500;
+      animation: chipIn 0.2s ease;
+    }
+
+    @keyframes chipIn {
+      from {
+        opacity: 0;
+        transform: scale(0.8);
+      }
+
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+
+    .med-chip .remove {
+      cursor: pointer;
+      color: var(--text-muted);
+      margin-left: 2px;
+      font-size: 11px;
+    }
+
+    .med-chip .remove:hover {
+      color: var(--danger);
+    }
+
+    /* Autocomplete */
+    .autocomplete {
+      position: relative;
+    }
+
+    .autocomplete-dropdown {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: #1a2332;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      z-index: 50;
+      max-height: 200px;
+      overflow-y: auto;
+      box-shadow: var(--shadow);
+      display: none;
+      margin-top: 4px;
+    }
+
+    .autocomplete-dropdown.open {
+      display: block;
+    }
+
+    .autocomplete-item {
+      padding: 10px 14px;
+      cursor: pointer;
+      font-size: 13px;
+      transition: var(--transition);
+    }
+
+    .autocomplete-item:hover {
+      background: rgba(26, 122, 74, 0.1);
+      color: var(--primary-light);
+    }
+
+    /* Loading overlay */
+    #loading-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(7, 13, 25, 0.85);
+      backdrop-filter: blur(6px);
+      z-index: 200;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      flex-direction: column;
+      gap: 16px;
+    }
+
+    #loading-overlay.show {
+      display: flex;
+    }
+
+    .loading-spinner {
+      width: 52px;
+      height: 52px;
+      border-radius: 50%;
+      border: 3px solid rgba(26, 122, 74, 0.2);
+      border-top-color: var(--primary);
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .loading-text {
+      font-size: 15px;
+      color: var(--text-secondary);
+      font-weight: 500;
+    }
+
+    /* Do's and Donts */
+    .dos-card {
+      background: rgba(22, 163, 74, 0.08);
+      border: 1px solid rgba(22, 163, 74, 0.2);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+    }
+
+    .donts-card {
+      background: rgba(220, 38, 38, 0.08);
+      border: 1px solid rgba(220, 38, 38, 0.2);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 8px;
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+    }
+
+    /* Confirmation textarea character count */
+    .textarea-wrap {
+      position: relative;
+    }
+
+    .char-count {
+      position: absolute;
+      bottom: 10px;
+      right: 12px;
+      font-size: 11px;
+      color: var(--text-muted);
+      font-family: var(--font-mono);
+    }
+
+    /* Voice button */
+    .voice-btn {
+      position: absolute;
+      bottom: 36px;
+      right: 12px;
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: var(--primary);
+      border: none;
+      color: #fff;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      transition: var(--transition);
+      box-shadow: 0 2px 8px rgba(26, 122, 74, 0.4);
+    }
+
+    .voice-btn:hover {
+      transform: scale(1.1);
+    }
+
+    .voice-btn.recording {
+      background: var(--danger);
+      animation: pulse-red 1s infinite;
+    }
+
+    #leaflet-map {
+      height: 100%;
+      width: 100%;
+      min-height: 500px;
+      z-index: 1;
+    }
+
+    /* ── LIGHT MODE OVERRIDES ── */
+    body.light-mode {
+      --sidebar: #f8fafc;
+      --bg: #f1f5f9;
+      --card: #ffffff;
+      --card-hover: #f8fafc;
+      --border: #e2e8f0;
+      --text: #0f172a;
+      --text-muted: #64748b;
+      --text-secondary: #475569;
+    }
+
+    body.light-mode #navbar {
+      background: rgba(255, 255, 255, 0.9);
+    }
+
+    body.light-mode #sidebar {
+      background: #ffffff;
+    }
+
+    body.light-mode .nav-brand {
+      color: #0f172a;
+    }
+
+    body.light-mode .nav-btn,
+    body.light-mode .history-btn {
+      background: #ffffff;
+      border-color: #e2e8f0;
+    }
+
+    body.light-mode .nav-item:hover {
+      background: rgba(0, 0, 0, 0.03);
+    }
+
+    body.light-mode .nav-item.active {
+      background: rgba(26, 122, 74, 0.08);
+    }
+
+    body.light-mode .card,
+    body.light-mode .glass,
+    body.light-mode .history-entry {
+      background: #ffffff;
+      border-color: #e2e8f0;
+    }
+
+    body.light-mode .input,
+    body.light-mode .select,
+    body.light-mode .textarea {
+      background: #ffffff;
+      border-color: #cbd5e1;
+      color: #0f172a;
+    }
+
+    body.light-mode .tabs {
+      background: #f1f5f9;
+    }
+
+    body.light-mode .tab-btn:not(.active) {
+      color: #64748b;
+    }
+
+    body.light-mode .tab-btn:not(.active):hover {
+      background: rgba(0, 0, 0, 0.03);
+    }
+
+    body.light-mode .btn-secondary {
+      background: #ffffff;
+      border-color: #e2e8f0;
+    }
+
+    body.light-mode .radio-card-label {
+      background: #ffffff;
+      border-color: #e2e8f0;
+    }
+
+    body.light-mode .day-tab {
+      background: #ffffff;
+    }
+
+    body.light-mode .day-plan-card {
+      background: #ffffff;
+    }
+
+    body.light-mode .feature-card {
+      background: #ffffff;
+      border-color: #e2e8f0;
+    }
+
+    body.light-mode .feature-name {
+      color: #0f172a;
+    }
+
+    body.light-mode .feature-desc {
+      color: #475569;
+    }
+
+    body.light-mode .toast {
+      background: #ffffff;
+      color: #0f172a;
+    }
+
+    body.light-mode .autocomplete-dropdown {
+      background: #ffffff;
+    }
+
+    body.light-mode #loading-overlay {
+      background: rgba(255, 255, 255, 0.85);
+    }
+
+    body.light-mode .loading-text {
+      color: #0f172a;
+    }
+
+    body.light-mode footer {
+      background: #ffffff;
+      border-color: #e2e8f0;
+    }
+
+    body.light-mode .nearby-map {
+      background: #f1f5f9;
+    }
+
+    body.light-mode #history-panel {
+      background: #ffffff;
+      border-color: #e2e8f0;
+    }
+
+    body.light-mode .matrix-table th {
+      background: #f8fafc;
+    }
+
+    body.light-mode .matrix-table td {
+      background: #ffffff;
+    }
+
+    body.light-mode .dos-card,
+    body.light-mode .donts-card {
+      background: rgba(26, 122, 74, 0.03);
+    }
+
+    #theme-icon {
+      transition: transform 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    }
+
+    .nav-btn:active #theme-icon {
+      transform: rotate(360deg) scale(0.8);
+    }
+
+    @media (min-width: 1024px) {
+      #grid-features {
+        grid-template-columns: repeat(4, 1fr) !important;
+      }
+    }
+  </style>
+</head>
+
+<body onload="initApp()">
+
+  <!-- SPLASH SCREEN -->
+  <div id="splash-screen">
+    <div class="splash-bg"></div>
+    <div class="splash-blob blob-1"></div>
+    <div class="splash-blob blob-2"></div>
+    <div class="splash-blob blob-3"></div>
+    <div class="splash-content">
+      <h1 class="splash-hello">Welcome to MediMitra</h1>
+      <p class="splash-subtitle">Your Personal AI Health Companion</p>
+      <button class="splash-btn" onclick="dismissSplash()">Get Started</button>
+    </div>
+  </div>
+
+  <!-- LOADING OVERLAY -->
+  <div id="loading-overlay">
+    <div class="loading-spinner"></div>
+    <p class="loading-text" id="loading-text">Analyzing with AI...</p>
+  </div>
+
+  <!-- TOAST CONTAINER -->
+  <div id="toast-container"></div>
+
+  <!-- NAVBAR -->
+  <nav id="navbar">
+    <div class="nav-logo">
+      <button class="hamburger nav-btn" onclick="toggleSidebar()">
+        <i class="fas fa-bars"></i>
+      </button>
+      <div class="nav-logo-icon"><i class="fas fa-heartbeat"></i></div>
+      <span class="nav-brand">Medi<span>Mitra</span></span>
+    </div>
+    <div class="nav-right">
+      <select class="lang-select" id="global-language" onchange="setGlobalLanguage(this.value)">
+        <option value="English">🌐 EN</option>
+        <option value="Hindi">🇮🇳 HI</option>
+        <option value="Odia">OD</option>
+        <option value="Bengali">BN</option>
+        <option value="Tamil">TA</option>
+        <option value="Telugu">TE</option>
+        <option value="Marathi">MR</option>
+      </select>
+      <button class="nav-btn" onclick="toggleDark()" title="Toggle theme">
+        <i class="fas fa-moon" id="theme-icon"></i>
+      </button>
+      <button class="emergency-btn" onclick="triggerEmergency()">
+        <span
+          style="width:7px;height:7px;background:#fff;border-radius:50%;display:inline-block;animation:pulse-red 1s infinite;"></span>
+        EMERGENCY
+      </button>
+    </div>
+  </nav>
+
+  <!-- MOBILE OVERLAY -->
+  <div id="mobile-overlay" onclick="toggleSidebar()"></div>
+
+  <!-- SIDEBAR -->
+  <aside id="sidebar">
+    <p class="sidebar-section-label">Diagnostic Suite</p>
+    <button class="nav-item active" data-section="dashboard" onclick="showSection('dashboard')">
+      <i class="fas fa-th-large"></i> Dashboard
+    </button>
+    <button class="nav-item" data-section="symptom" onclick="showSection('symptom')">
+      <i class="fas fa-stethoscope"></i> Symptom Checker
+    </button>
+    <button class="nav-item" data-section="prescription" onclick="showSection('prescription')">
+      <i class="fas fa-file-medical"></i> Prescription Reader
+    </button>
+    <button class="nav-item" data-section="drug" onclick="showSection('drug')">
+      <i class="fas fa-pills"></i> Drug Interaction
+    </button>
+    <p class="sidebar-section-label">Health Care</p>
+    <button class="nav-item" data-section="scanner" onclick="showSection('scanner')">
+      <i class="fas fa-camera"></i> Medicine Scanner
+    </button>
+    <button class="nav-item" data-section="lifestyle" onclick="showSection('lifestyle')">
+      <i class="fas fa-heart"></i> Lifestyle Advisor
+    </button>
+    <button class="nav-item" data-section="seasonal" onclick="showSection('seasonal')">
+      <i class="fas fa-cloud-sun"></i> Seasonal Awareness
+    </button>
+    <button class="nav-item" data-section="nearby" onclick="showSection('nearby')">
+      <i class="fas fa-map-marker-alt"></i> Nearby Healthcare
+    </button>
+    <div class="sidebar-footer">
+      <p>⚕️ AI tool only. Always consult a licensed doctor before taking any medical action.</p>
+    </div>
+  </aside>
+
+  <!-- HISTORY PANEL -->
+  <div id="history-panel">
+    <div class="history-header">
+      <span class="history-title" id="history-panel-title">📋 History</span>
+      <button class="history-close" onclick="closeHistory()"><i class="fas fa-times"></i></button>
+    </div>
+    <div class="history-list" id="history-list-content">
+      <div class="history-empty">
+        <i class="fas fa-clock"></i>
+        <p style="font-weight:600;margin-bottom:6px;">No history yet</p>
+        <p style="font-size:13px;">Your results will appear here after your first analysis.</p>
+      </div>
+    </div>
+  </div>
+  <div id="history-overlay" onclick="closeHistory()"></div>
+
+  <!-- MAIN -->
+  <main id="main">
+
+    <!-- ═══════════════════ DASHBOARD ═══════════════════ -->
+    <section class="section active" id="section-dashboard">
+      <!-- Hero -->
+      <div class="dashboard-banner">
+        <div class="banner-icons">
+          <i class="fas fa-dna dna-icon"></i>
+          <i class="fas fa-microscope micro-icon"></i>
+        </div>
+        <div style="position:relative; z-index:1;">
+          <span class="banner-tag">
+            <span
+              style="width:6px;height:6px;background:currentColor;border-radius:50%;animation:pulse-green 1.5s infinite;display:inline-block;"></span>
+            AI-POWERED HEALTH COMPANION
+          </span>
+          <h1 class="banner-title">
+            Your Health,<br><span>Our Priority</span>
+          </h1>
+          <p class="banner-desc">
+            7 AI-powered tools for smarter health decisions — symptom checking, medicine scanning, drug interactions,
+            and more. In your language.
+          </p>
+          <div class="banner-chips">
+            <div class="banner-info-chip">
+              <span>7</span>
+              <span>AI Features</span>
+            </div>
+            <div class="banner-info-chip">
+              <span>10+</span>
+              <span>Languages</span>
+            </div>
+            <div class="banner-info-chip">
+              <span>⚡</span>
+              <span>Real-time Results</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Feature Grid -->
+      <h2 style="font-family:var(--font-display);font-size:20px;font-weight:700;margin-bottom:6px;">What can I help you
+        with today?</h2>
+      <p style="color:var(--text-muted);font-size:14px;margin-bottom:20px;">Click any feature to get started instantly
+      </p>
+      <div id="grid-features"
+        style="display:grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; margin-bottom: 32px;">
+        <div class="feature-card" onclick="showSection('symptom')" style="--fc:#dc2626;">
+          <div
+            style="position:absolute;top:0;right:0;width:80px;height:80px;background:#dc2626;border-radius:0 24px 0 80px;opacity:0.08;">
+          </div>
+          <div class="feature-icon" style="background:rgba(220,38,38,0.12);color:#f87171;"><i
+              class="fas fa-stethoscope"></i></div>
+          <div class="feature-name">Symptom Checker</div>
+          <div class="feature-desc">Describe your symptoms and get AI-powered health guidance instantly.</div>
+          <div class="feature-link">Open <i class="fas fa-arrow-right"></i></div>
+        </div>
+        <div class="feature-card" onclick="showSection('prescription')">
+          <div
+            style="position:absolute;top:0;right:0;width:80px;height:80px;background:#2563eb;border-radius:0 24px 0 80px;opacity:0.08;">
+          </div>
+          <div class="feature-icon" style="background:rgba(37,99,235,0.12);color:#60a5fa;"><i
+              class="fas fa-file-medical"></i></div>
+          <div class="feature-name">Prescription Reader</div>
+          <div class="feature-desc">Upload prescription photo and get plain language explanation in your language.</div>
+          <div class="feature-link">Open <i class="fas fa-arrow-right"></i></div>
+        </div>
+        <div class="feature-card" onclick="showSection('drug')">
+          <div
+            style="position:absolute;top:0;right:0;width:80px;height:80px;background:#d97706;border-radius:0 24px 0 80px;opacity:0.08;">
+          </div>
+          <div class="feature-icon" style="background:rgba(217,119,6,0.12);color:#fbbf24;"><i class="fas fa-pills"></i>
+          </div>
+          <div class="feature-name">Drug Interaction</div>
+          <div class="feature-desc">Check if your medicines are safe to take together. Avoid dangerous combinations.
+          </div>
+          <div class="feature-link">Open <i class="fas fa-arrow-right"></i></div>
+        </div>
+        <div class="feature-card" onclick="showSection('scanner')">
+          <div
+            style="position:absolute;top:0;right:0;width:80px;height:80px;background:#7c3aed;border-radius:0 24px 0 80px;opacity:0.08;">
+          </div>
+          <div class="feature-icon" style="background:rgba(124,58,237,0.12);color:#a78bfa;"><i
+              class="fas fa-camera"></i></div>
+          <div class="feature-name">Medicine Scanner</div>
+          <div class="feature-desc">Scan medicine packaging to verify authenticity and check OpenFDA database.</div>
+          <div class="feature-link">Open <i class="fas fa-arrow-right"></i></div>
+        </div>
+        <div class="feature-card" onclick="showSection('lifestyle')">
+          <div
+            style="position:absolute;top:0;right:0;width:80px;height:80px;background:#0d9488;border-radius:0 24px 0 80px;opacity:0.08;">
+          </div>
+          <div class="feature-icon" style="background:rgba(13,148,136,0.12);color:#2dd4bf;"><i class="fas fa-heart"></i>
+          </div>
+          <div class="feature-name">Lifestyle Advisor</div>
+          <div class="feature-desc">Get a personalized 7-day diet, exercise, and wellness plan tailored to you.</div>
+          <div class="feature-link">Open <i class="fas fa-arrow-right"></i></div>
+        </div>
+        <div class="feature-card" onclick="showSection('seasonal')">
+          <div
+            style="position:absolute;top:0;right:0;width:80px;height:80px;background:#ea580c;border-radius:0 24px 0 80px;opacity:0.08;">
+          </div>
+          <div class="feature-icon" style="background:rgba(234,88,12,0.12);color:#fb923c;"><i
+              class="fas fa-cloud-sun"></i></div>
+          <div class="feature-name">Seasonal Awareness</div>
+          <div class="feature-desc">Auto-detects your location and season to show relevant health alerts.</div>
+          <div class="feature-link">Open <i class="fas fa-arrow-right"></i></div>
+        </div>
+        <div class="feature-card" onclick="showSection('nearby')" style="grid-column:span 1;">
+          <div
+            style="position:absolute;top:0;right:0;width:80px;height:80px;background:#1a7a4a;border-radius:0 24px 0 80px;opacity:0.08;">
+          </div>
+          <div class="feature-icon" style="background:rgba(26,122,74,0.12);color:#4ade80;"><i
+              class="fas fa-map-marker-alt"></i></div>
+          <div class="feature-name">Nearby Healthcare</div>
+          <div class="feature-desc">Find hospitals, clinics, and pharmacies near you on an interactive map.</div>
+          <div class="feature-link">Open <i class="fas fa-arrow-right"></i></div>
+        </div>
+
+        <!-- NEW: User Feedback Card -->
+        <div class="feature-card" id="feedback-card" style="cursor:default; background: var(--card);">
+          <div
+            style="position:absolute;top:0;right:0;width:80px;height:80px;background:#6366f1;border-radius:0 24px 0 80px;opacity:0.08;">
+          </div>
+          <div class="feature-icon" style="background:rgba(99,102,241,0.12);color:#818cf8;"><i
+              class="fas fa-comment-alt"></i></div>
+          <div class="feature-name">User Feedback</div>
+          <div style="display:flex;gap:4px;margin-bottom:8px;font-size:16px;color:#94a3b8;">
+            <i class="far fa-star feedback-star" onclick="setRating(1)" data-val="1"
+              style="cursor:pointer;transition:0.2s;"></i>
+            <i class="far fa-star feedback-star" onclick="setRating(2)" data-val="2"
+              style="cursor:pointer;transition:0.2s;"></i>
+            <i class="far fa-star feedback-star" onclick="setRating(3)" data-val="3"
+              style="cursor:pointer;transition:0.2s;"></i>
+            <i class="far fa-star feedback-star" onclick="setRating(4)" data-val="4"
+              style="cursor:pointer;transition:0.2s;"></i>
+            <i class="far fa-star feedback-star" onclick="setRating(5)" data-val="5"
+              style="cursor:pointer;transition:0.2s;"></i>
+          </div>
+          <textarea id="feedback-text" placeholder="Tell us more..."
+            style="width:100%;height:40px;background:rgba(255,255,255,0.03);border:1px solid var(--border);border-radius:8px;padding:6px;font-size:11px;color:var(--text);resize:none;margin-bottom:8px;outline:none;transition:0.3s;"
+            onfocus="this.style.borderColor='#818cf8'"></textarea>
+          <button class="btn btn-primary" style="padding:6px 12px;font-size:12px;width:100%;justify-content:center;"
+            onclick="submitFeedback()">Send Feedback</button>
+        </div>
+      </div>
+
+      <!-- Disclaimer -->
+      <div
+        style="background:rgba(217,119,6,0.1);border:1px solid rgba(217,119,6,0.3);border-radius:12px;padding:16px 20px;display:flex;gap:12px;align-items:flex-start;">
+        <i class="fas fa-exclamation-triangle" style="color:#fbbf24;margin-top:2px;flex-shrink:0;"></i>
+        <p style="font-size:13px;color:var(--text-secondary);line-height:1.6;">
+          <strong style="color:var(--text);">Medical Disclaimer:</strong> MediMitra provides AI-generated health
+          information only. It is NOT a substitute for professional medical advice, diagnosis, or treatment. Always
+          consult a licensed doctor for medical decisions.
+        </p>
+      </div>
+    </section>
+
+    <!-- ═══════════════════ SYMPTOM CHECKER ═══════════════════ -->
+    <section class="section" id="section-symptom">
+      <div class="section-header">
+        <div>
+          <div class="section-title">🤒 Symptom Checker</div>
+          <div class="section-subtitle">Describe your symptoms and get AI-powered health guidance</div>
+        </div>
+        <button class="history-btn" onclick="openHistory('symptom')" title="View History" id="symptom-hist-btn">
+          <i class="fas fa-history"></i>
+          <span class="history-badge" id="symptom-hist-count" style="display:none;">0</span>
+        </button>
+      </div>
+      <div class="grid-2">
+        <!-- Input -->
+        <div style="display:flex;flex-direction:column;gap:18px;">
+          <div class="card card-lg">
+            <div class="input-group">
+              <label class="input-label">How are you feeling?</label>
+              <div class="textarea-wrap" style="position:relative;">
+                <textarea class="textarea" id="symptom-text"
+                  placeholder="e.g. I have fever since 2 days, headache, body pain and feeling very tired..."
+                  maxlength="500" oninput="updateCharCount('symptom-text','symptom-chars',500)"></textarea>
+                <span class="char-count" id="symptom-chars" style="bottom:38px;">0/500</span>
+                <button class="voice-btn" id="symptom-voice-btn"
+                  onclick="startVoice('symptom-text','symptom-voice-btn')" title="Voice input">
+                  <i class="fas fa-microphone"></i>
+                </button>
+              </div>
+            </div>
+            <div style="margin-top:14px;">
+              <p class="input-label" style="margin-bottom:8px;">Common Symptoms (click to add)</p>
+              <div style="display:flex;flex-wrap:wrap;gap:6px;" id="symptom-chips">
+                <span class="chip" onclick="addSymptom(this,'Fever')">🌡️ Fever</span>
+                <span class="chip" onclick="addSymptom(this,'Headache')">🤕 Headache</span>
+                <span class="chip" onclick="addSymptom(this,'Cough')">😮‍💨 Cough</span>
+                <span class="chip" onclick="addSymptom(this,'Nausea')">🤢 Nausea</span>
+                <span class="chip" onclick="addSymptom(this,'Fatigue')">😴 Fatigue</span>
+                <span class="chip" onclick="addSymptom(this,'Body Pain')">💪 Body Pain</span>
+                <span class="chip" onclick="addSymptom(this,'Sore Throat')">🗣️ Sore Throat</span>
+                <span class="chip" onclick="addSymptom(this,'Dizziness')">💫 Dizziness</span>
+                <span class="chip" onclick="addSymptom(this,'Chest Pain')">❤️ Chest Pain</span>
+                <span class="chip" onclick="addSymptom(this,'Stomach Ache')">🤧 Stomach Ache</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="card card-lg">
+            <p class="input-label" style="margin-bottom:12px;">How long have you had these symptoms?</p>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+              <label class="radio-card"><input type="radio" name="duration" value="<1 day" checked />
+                <div class="radio-card-label"><i class="fas fa-clock"></i>Less than 1 day</div>
+              </label>
+              <label class="radio-card"><input type="radio" name="duration" value="1-3 days" />
+                <div class="radio-card-label"><i class="fas fa-calendar-day"></i>1–3 days</div>
+              </label>
+              <label class="radio-card"><input type="radio" name="duration" value="3-7 days" />
+                <div class="radio-card-label"><i class="fas fa-calendar-week"></i>3–7 days</div>
+              </label>
+              <label class="radio-card"><input type="radio" name="duration" value=">1 week" />
+                <div class="radio-card-label"><i class="fas fa-calendar"></i>More than a week</div>
+              </label>
+            </div>
+          </div>
+
+          <div class="card card-lg">
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+              <p class="input-label">Severity (1–10)</p>
+              <span id="severity-val"
+                style="font-family:var(--font-display);font-size:24px;font-weight:800;color:var(--primary-light);">5</span>
+            </div>
+            <input type="range" class="slider" min="1" max="10" value="5" id="severity-slider"
+              oninput="document.getElementById('severity-val').textContent=this.value" />
+            <div
+              style="display:flex;justify-content:space-between;font-size:11px;color:var(--text-muted);margin-top:6px;">
+              <span>Mild</span><span>Moderate</span><span>Severe</span>
+            </div>
+          </div>
+
+          <button class="btn btn-primary btn-full" onclick="checkSymptoms()">
+            <i class="fas fa-search-plus"></i> Analyze Symptoms
+          </button>
+        </div>
+
+        <!-- Results -->
+        <div>
+          <div id="symptom-empty" class="card card-lg" style="text-align:center;padding:60px 24px;">
+            <div
+              style="width:100px;height:100px;background:rgba(26,122,74,0.1);border-radius:50%;display:flex;align-items:center;justify-content:center;margin:0 auto 20px;font-size:40px;">
+              🩺</div>
+            <h3 style="font-family:var(--font-display);font-size:20px;margin-bottom:8px;">Ready to Analyze</h3>
+            <p style="color:var(--text-muted);font-size:14px;line-height:1.6;">Fill in your symptoms on the left and
+              click Analyze. Our AI will identify possible conditions and give you guidance.</p>
+            <div style="display:flex;gap:10px;justify-content:center;margin-top:20px;">
+              <span class="badge badge-safe"><i class="fas fa-lock"></i> Private</span>
+              <span class="badge badge-info"><i class="fas fa-bolt"></i> Instant</span>
+            </div>
+          </div>
+          <div id="symptom-result" style="display:none;">
+            <div class="result-card safe" id="symptom-result-card" style="margin-bottom:16px;">
+              <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;">
+                <span class="badge badge-safe" id="symptom-severity-badge">Mild</span>
+                <span style="font-size:12px;color:var(--text-muted);" id="symptom-confidence"></span>
+              </div>
+              <h3 id="symptom-condition"
+                style="font-family:var(--font-display);font-size:22px;font-weight:700;margin-bottom:8px;"></h3>
+              <div class="progress-bar" style="margin-bottom:4px;">
+                <div class="progress-fill" id="symptom-conf-bar" style="width:0%;"></div>
+              </div>
+              <span style="font-size:11px;color:var(--text-muted);" id="symptom-conf-label"></span>
+            </div>
+
+            <div class="tabs">
+              <button class="tab-btn active" onclick="switchTab('symptom-tabs',0,this)">What It Is</button>
+              <button class="tab-btn" onclick="switchTab('symptom-tabs',1,this)">What To Do</button>
+              <button class="tab-btn" onclick="switchTab('symptom-tabs',2,this)">See A Doctor If...</button>
+            </div>
+            <div id="symptom-tabs">
+              <div class="tab-panel active card" id="symptom-tab-0" style="padding:20px;"></div>
+              <div class="tab-panel card" id="symptom-tab-1" style="padding:20px;"></div>
+              <div class="tab-panel card" id="symptom-tab-2" style="padding:20px;"></div>
+            </div>
+
+            <div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;">
+              <button class="btn btn-secondary" onclick="showSection('nearby')" style="flex:1;justify-content:center;">
+                <i class="fas fa-map-marker-alt"></i> Find Nearby Clinic
+              </button>
+              <button class="btn btn-secondary" onclick="showSection('drug')" style="flex:1;justify-content:center;">
+                <i class="fas fa-pills"></i> Check Interactions
+              </button>
+              <button class="btn btn-secondary" onclick="window.print()" style="flex:1;justify-content:center;">
+                <i class="fas fa-download"></i> Save Report
+              </button>
+            </div>
+            <div
+              style="margin-top:12px;background:rgba(217,119,6,0.1);border:1px solid rgba(217,119,6,0.2);border-radius:8px;padding:10px 14px;font-size:12px;color:#fbbf24;">
+              ⚠️ This is AI guidance only — not a medical diagnosis. Consult a licensed doctor.
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════ PRESCRIPTION READER ═══════════════════ -->
+    <section class="section" id="section-prescription">
+      <div class="section-header">
+        <div>
+          <div class="section-title">📄 Prescription Reader</div>
+          <div class="section-subtitle">Upload your prescription and get a clear explanation in your language</div>
+        </div>
+        <button class="history-btn" onclick="openHistory('prescription')" title="View History"
+          id="prescription-hist-btn">
+          <i class="fas fa-history"></i>
+          <span class="history-badge" id="prescription-hist-count" style="display:none;">0</span>
+        </button>
+      </div>
+
+      <!-- Stepper -->
+      <div class="stepper">
+        <div class="step active" id="rx-step-1">
+          <div class="step-circle">1</div>
+          <div class="step-label">Upload</div>
+        </div>
+        <div class="step-line" id="rx-line-1"></div>
+        <div class="step" id="rx-step-2">
+          <div class="step-circle">2</div>
+          <div class="step-label">Processing</div>
+        </div>
+        <div class="step-line" id="rx-line-2"></div>
+        <div class="step" id="rx-step-3">
+          <div class="step-circle">3</div>
+          <div class="step-label">Results</div>
+        </div>
+      </div>
+
+      <!-- Step 1: Upload -->
+      <div id="rx-panel-1">
+        <div class="grid-2">
+          <div>
+            <div class="upload-zone card-lg" id="rx-upload-zone"
+              onclick="document.getElementById('rx-file-input').click()"
+              ondragover="event.preventDefault();this.classList.add('drag-over')"
+              ondragleave="this.classList.remove('drag-over')" ondrop="handleRxDrop(event)">
+              <div class="upload-icon"><i class="fas fa-cloud-upload-alt"></i></div>
+              <h3 style="font-family:var(--font-display);font-size:18px;font-weight:700;margin-bottom:6px;">Drag & drop
+                your prescription</h3>
+              <p style="color:var(--text-muted);font-size:14px;margin-bottom:16px;">or click to browse — JPG, PNG, PDF
+              </p>
+              <input type="file" id="rx-file-input" accept="image/*,.pdf" style="display:none;"
+                onchange="handleRxFile(event)" />
+              <div id="rx-file-preview" style="display:none;margin-top:12px;">
+                <img id="rx-preview-img" style="max-width:100%;border-radius:10px;max-height:200px;object-fit:contain;"
+                  alt="Prescription" />
+                <p id="rx-file-name" style="font-size:12px;color:#4ade80;margin-top:8px;font-weight:600;"></p>
+              </div>
+            </div>
+            <div style="text-align:center;padding:12px 0;color:var(--text-muted);font-size:13px;font-weight:600;">— OR —
+            </div>
+            <button class="btn btn-secondary btn-full" onclick="startCamera('rx')">
+              <i class="fas fa-camera"></i> Take Photo with Camera
+            </button>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:16px;">
+            <div class="card" style="background:rgba(26,122,74,0.06);border-color:rgba(26,122,74,0.2);">
+              <p style="font-size:13px;color:var(--text-secondary);line-height:1.7;">
+                <strong style="color:var(--primary-light);">📌 Tips for best results:</strong><br />
+                • Ensure the prescription is clear and well-lit<br />
+                • All text should be readable<br />
+                • Supports handwritten & printed prescriptions
+              </p>
+            </div>
+            <button class="btn btn-primary btn-full" onclick="readPrescription()" id="rx-submit-btn" disabled>
+              <i class="fas fa-magic"></i> Read My Prescription
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 2: Processing -->
+      <div id="rx-panel-2" style="display:none;">
+        <div class="card card-lg" style="max-width:600px;margin:0 auto;padding:40px;">
+          <h3 style="font-family:var(--font-display);font-size:20px;margin-bottom:28px;text-align:center;">Analyzing
+            Your Prescription...</h3>
+          <div id="rx-progress-steps" style="display:flex;flex-direction:column;gap:16px;">
+            <div class="rx-prog-step" id="rxp-1" style="display:flex;align-items:center;gap:14px;">
+              <div
+                style="width:32px;height:32px;border-radius:50%;background:rgba(26,122,74,0.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                <i class="fas fa-camera" style="color:var(--primary-light);font-size:13px;"></i>
+              </div>
+              <div style="flex:1;">
+                <p style="font-size:14px;font-weight:600;margin-bottom:4px;">Reading prescription image...</p>
+                <div class="progress-bar">
+                  <div class="progress-fill" id="rxp-1-bar" style="width:0%;"></div>
+                </div>
+              </div>
+              <span id="rxp-1-check" style="display:none;color:#4ade80;"><i class="fas fa-check-circle"></i></span>
+            </div>
+            <div class="rx-prog-step" id="rxp-2" style="display:flex;align-items:center;gap:14px;opacity:0.4;">
+              <div
+                style="width:32px;height:32px;border-radius:50%;background:rgba(26,122,74,0.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                <i class="fas fa-brain" style="color:var(--primary-light);font-size:13px;"></i>
+              </div>
+              <div style="flex:1;">
+                <p style="font-size:14px;font-weight:600;margin-bottom:4px;">AI understanding medicines...</p>
+                <div class="progress-bar">
+                  <div class="progress-fill" id="rxp-2-bar" style="width:0%;"></div>
+                </div>
+              </div>
+              <span id="rxp-2-check" style="display:none;color:#4ade80;"><i class="fas fa-check-circle"></i></span>
+            </div>
+            <div class="rx-prog-step" id="rxp-3" style="display:flex;align-items:center;gap:14px;opacity:0.4;">
+              <div
+                style="width:32px;height:32px;border-radius:50%;background:rgba(26,122,74,0.15);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+                <i class="fas fa-globe" style="color:var(--primary-light);font-size:13px;"></i>
+              </div>
+              <div style="flex:1;">
+                <p style="font-size:14px;font-weight:600;margin-bottom:4px;">Translating to your language...</p>
+                <div class="progress-bar">
+                  <div class="progress-fill" id="rxp-3-bar" style="width:0%;"></div>
+                </div>
+              </div>
+              <span id="rxp-3-check" style="display:none;color:#4ade80;"><i class="fas fa-check-circle"></i></span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 3: Results -->
+      <div id="rx-panel-3" style="display:none;">
+        <div
+          style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:10px;">
+          <div style="display:flex;gap:10px;flex-wrap:wrap;">
+            <button class="btn btn-secondary" id="rx-read-btn" onclick="toggleReadAloud()"><i
+                class="fas fa-volume-up"></i> Read Aloud</button>
+            <button class="btn btn-secondary" onclick="showSection('drug')"><i class="fas fa-pills"></i> Check
+              Interactions</button>
+            <button class="btn btn-secondary" onclick="window.print()"><i class="fas fa-download"></i> Download</button>
+          </div>
+          <button class="btn btn-secondary" onclick="rxReset()"><i class="fas fa-redo"></i> Start Over</button>
+        </div>
+
+        <!-- Medicines Table -->
+        <div class="card card-lg" style="margin-bottom:20px;overflow-x:auto;">
+          <h3 style="font-family:var(--font-display);font-size:17px;font-weight:700;margin-bottom:16px;"><i
+              class="fas fa-table" style="color:var(--primary-light);margin-right:8px;"></i>Extracted Medicines</h3>
+          <table style="width:100%;border-collapse:collapse;font-size:13px;" id="rx-table">
+            <thead>
+              <tr style="background:rgba(255,255,255,0.04);">
+                <th
+                  style="padding:10px 14px;text-align:left;border-bottom:1px solid var(--border);color:var(--text-secondary);font-weight:700;">
+                  Medicine</th>
+                <th
+                  style="padding:10px 14px;text-align:left;border-bottom:1px solid var(--border);color:var(--text-secondary);font-weight:700;">
+                  Dosage</th>
+                <th
+                  style="padding:10px 14px;text-align:left;border-bottom:1px solid var(--border);color:var(--text-secondary);font-weight:700;">
+                  Frequency</th>
+                <th
+                  style="padding:10px 14px;text-align:left;border-bottom:1px solid var(--border);color:var(--text-secondary);font-weight:700;">
+                  Timing</th>
+              </tr>
+            </thead>
+            <tbody id="rx-table-body"></tbody>
+          </table>
+        </div>
+
+        <!-- AI Explanation -->
+        <div id="rx-explanations" style="display:flex;flex-direction:column;gap:14px;"></div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════ DRUG INTERACTION ═══════════════════ -->
+    <section class="section" id="section-drug">
+      <div class="section-header">
+        <div>
+          <div class="section-title">⚠️ Drug Interaction Checker</div>
+          <div class="section-subtitle">Check if your medicines are safe to take together</div>
+        </div>
+      </div>
+      <div class="grid-2">
+        <!-- Input -->
+        <div style="display:flex;flex-direction:column;gap:16px;">
+          <div class="card card-lg">
+            <p class="input-label" style="margin-bottom:10px;">Add Your Medicines</p>
+            <div class="autocomplete" style="margin-bottom:12px;">
+              <div style="position:relative;">
+                <i class="fas fa-search"
+                  style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text-muted);font-size:13px;"></i>
+                <input type="text" class="input" id="drug-search" placeholder="Type medicine name (e.g. Aspirin)..."
+                  style="padding-left:36px;" oninput="drugAutocomplete(this.value)"
+                  onkeydown="if(event.key==='Enter')addDrugFromInput()" />
+              </div>
+              <div class="autocomplete-dropdown" id="drug-dropdown"></div>
+            </div>
+            <div id="drug-chips" style="display:flex;flex-wrap:wrap;gap:8px;min-height:36px;margin-bottom:12px;"></div>
+            <p style="font-size:11px;color:var(--text-muted);">Add at least 2 medicines. Max 10.</p>
+          </div>
+          <button class="btn btn-secondary" onclick="startVoiceDrug()" style="justify-content:center;">
+            <i class="fas fa-microphone"></i> Speak Medicine Names
+          </button>
+          <button class="btn btn-primary btn-full" id="drug-check-btn" onclick="checkInteractions()" disabled>
+            <i class="fas fa-analytics"></i> Check Interactions
+          </button>
+          <div class="card" style="background:rgba(217,119,6,0.06);border-color:rgba(217,119,6,0.2);">
+            <p style="font-size:12px;color:var(--text-secondary);line-height:1.6;">⚕️ Interaction data is sourced from
+              OpenFDA clinical records. Always verify with your doctor or pharmacist before changing any medication.</p>
+          </div>
+        </div>
+
+        <!-- Results -->
+        <div>
+          <div id="drug-empty" style="text-align:center;padding:60px 20px;color:var(--text-muted);">
+            <div style="font-size:64px;margin-bottom:16px;opacity:0.5;">💊 + 💊</div>
+            <p style="font-size:16px;font-weight:600;color:var(--text-secondary);margin-bottom:8px;">Add your medicines
+            </p>
+            <p style="font-size:13px;">Enter 2 or more medicines on the left to check for interactions.</p>
+          </div>
+          <div id="drug-result" style="display:none;">
+            <!-- Risk Banner -->
+            <div id="drug-risk-banner" class="card"
+              style="margin-bottom:16px;padding:18px 20px;display:flex;align-items:center;gap:14px;"></div>
+            <!-- Matrix -->
+            <div class="card card-lg" style="margin-bottom:16px;overflow-x:auto;">
+              <h3 style="font-family:var(--font-display);font-size:17px;font-weight:700;margin-bottom:16px;">Interaction
+                Matrix</h3>
+              <div id="drug-matrix"></div>
+            </div>
+            <!-- Detail Cards -->
+            <div id="drug-detail-cards"></div>
+            <button class="btn btn-secondary btn-full" style="margin-top:12px;" onclick="window.print()">
+              <i class="fas fa-print"></i> Show to Your Doctor
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════ MEDICINE SCANNER ═══════════════════ -->
+    <section class="section" id="section-scanner">
+      <div class="section-header">
+        <div>
+          <div class="section-title">📸 Medicine Scanner</div>
+          <div class="section-subtitle">Verify if your medicine is genuine before consuming it</div>
+        </div>
+        <button class="history-btn" onclick="openHistory('scanner')" title="View History" id="scanner-hist-btn">
+          <i class="fas fa-history"></i>
+          <span class="history-badge" id="scanner-hist-count" style="display:none;">0</span>
+        </button>
+      </div>
+      <div style="max-width:640px;margin:0 auto;">
+        <div class="card card-lg" style="margin-bottom:20px;">
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px;">
+            <button class="btn btn-secondary btn-full" onclick="startCamera('scan')">
+              <i class="fas fa-camera"></i> Open Camera
+            </button>
+            <button class="btn btn-secondary btn-full" onclick="document.getElementById('scan-file').click()">
+              <i class="fas fa-folder-open"></i> Upload Image
+            </button>
+          </div>
+          <input type="file" id="scan-file" accept="image/*" style="display:none;" onchange="handleScanFile(event)" />
+          <div id="scan-preview" style="display:none;margin-bottom:16px;">
+            <img id="scan-preview-img" style="width:100%;border-radius:10px;max-height:240px;object-fit:contain;"
+              alt="Medicine" />
+            <button class="btn btn-secondary" style="margin-top:8px;width:100%;justify-content:center;"
+              onclick="clearScan()">
+              <i class="fas fa-redo"></i> Retake / Change Image
+            </button>
+          </div>
+          <div class="input-group" style="margin-bottom:16px;">
+            <label class="input-label">Medicine Name (optional — improves accuracy)</label>
+            <input type="text" class="input" id="scan-med-name" placeholder="e.g. Paracetamol 500mg" />
+          </div>
+          <button class="btn btn-primary btn-full" id="scan-submit-btn" onclick="scanMedicine()" disabled>
+            <i class="fas fa-search"></i> Scan & Verify Medicine
+          </button>
+        </div>
+
+        <div id="scan-result" style="display:none;">
+          <!-- Score -->
+          <div class="card card-lg" style="text-align:center;margin-bottom:16px;">
+            <div class="score-circle" id="scan-score-circle">
+              <svg width="140" height="140" viewBox="0 0 140 140">
+                <circle cx="70" cy="70" r="60" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="10" />
+                <circle cx="70" cy="70" r="60" fill="none" stroke="#1a7a4a" stroke-width="10" stroke-linecap="round"
+                  stroke-dasharray="377" id="scan-score-ring"
+                  style="transition:stroke-dashoffset 1.5s ease;stroke-dashoffset:377;" />
+              </svg>
+              <div class="score-number" id="scan-score-num">0</div>
+              <div class="score-label">SAFETY SCORE</div>
+            </div>
+            <div id="scan-verdict"
+              style="font-family:var(--font-display);font-size:20px;font-weight:700;margin-top:8px;"></div>
+          </div>
+
+          <!-- Details -->
+          <div class="card card-lg" style="margin-bottom:16px;">
+            <h3 style="font-family:var(--font-display);font-size:16px;font-weight:700;margin-bottom:16px;"><i
+                class="fas fa-list-alt" style="color:var(--primary-light);margin-right:8px;"></i>Analysis Details</h3>
+            <div id="scan-details"></div>
+          </div>
+
+          <!-- What to do -->
+          <div class="card card-lg">
+            <h3 style="font-family:var(--font-display);font-size:16px;font-weight:700;margin-bottom:14px;">What Should
+              You Do?</h3>
+            <div id="scan-actions"></div>
+            <a href="https://cdsco.gov.in" target="_blank" class="btn btn-secondary btn-full" style="margin-top:12px;">
+              <i class="fas fa-flag"></i> Report to CDSCO
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════ LIFESTYLE ADVISOR ═══════════════════ -->
+    <section class="section" id="section-lifestyle">
+      <div class="section-header">
+        <div>
+          <div class="section-title">🥗 Lifestyle Advisor</div>
+          <div class="section-subtitle">Get a personalized 7-day diet, exercise & wellness plan</div>
+        </div>
+        <button class="history-btn" onclick="openHistory('lifestyle')" title="View History" id="lifestyle-hist-btn">
+          <i class="fas fa-history"></i>
+          <span class="history-badge" id="lifestyle-hist-count" style="display:none;">0</span>
+        </button>
+      </div>
+
+      <!-- Form -->
+      <div id="lifestyle-form">
+        <div class="grid-2" style="margin-bottom:20px;">
+          <div class="card card-lg" style="display:flex;flex-direction:column;gap:16px;">
+            <h3 style="font-family:var(--font-display);font-size:17px;font-weight:700;"><i class="fas fa-user"
+                style="color:var(--primary-light);margin-right:8px;"></i>Basic Info</h3>
+            <div class="grid-2" style="gap:12px;">
+              <div class="input-group"><label class="input-label">Full Name</label><input type="text" class="input"
+                  id="ls-name" placeholder="Your name" /></div>
+              <div class="input-group"><label class="input-label">Age</label><input type="number" class="input"
+                  id="ls-age" placeholder="25" min="10" max="100" /></div>
+            </div>
+            <div class="input-group">
+              <label class="input-label">Gender</label>
+              <div style="display:flex;gap:8px;">
+                <label class="radio-card" style="flex:1;"><input type="radio" name="ls-gender" value="Male" checked />
+                  <div class="radio-card-label"><i class="fas fa-mars"></i>Male</div>
+                </label>
+                <label class="radio-card" style="flex:1;"><input type="radio" name="ls-gender" value="Female" />
+                  <div class="radio-card-label"><i class="fas fa-venus"></i>Female</div>
+                </label>
+                <label class="radio-card" style="flex:1;"><input type="radio" name="ls-gender" value="Other" />
+                  <div class="radio-card-label"><i class="fas fa-genderless"></i>Other</div>
+                </label>
+              </div>
+            </div>
+            <div class="grid-2" style="gap:12px;">
+              <div class="input-group"><label class="input-label">Height (cm)</label><input type="number" class="input"
+                  id="ls-height" placeholder="170" oninput="calcBMI()" /></div>
+              <div class="input-group"><label class="input-label">Weight (kg)</label><input type="number" class="input"
+                  id="ls-weight" placeholder="65" oninput="calcBMI()" /></div>
+            </div>
+            <div id="bmi-display"
+              style="display:none;padding:12px 16px;border-radius:10px;background:rgba(26,122,74,0.1);border:1px solid rgba(26,122,74,0.2);display:flex;align-items:center;gap:12px;">
+              <span style="font-size:13px;color:var(--text-muted);">Your BMI:</span>
+              <span id="bmi-value" style="font-family:var(--font-display);font-size:22px;font-weight:800;"></span>
+              <span id="bmi-chip" class="bmi-chip"></span>
+            </div>
+          </div>
+
+          <div class="card card-lg" style="display:flex;flex-direction:column;gap:16px;">
+            <h3 style="font-family:var(--font-display);font-size:17px;font-weight:700;"><i class="fas fa-heartbeat"
+                style="color:var(--primary-light);margin-right:8px;"></i>Health Details</h3>
+            <div>
+              <p class="input-label" style="margin-bottom:8px;">Health Conditions (select all that apply)</p>
+              <div style="display:flex;flex-wrap:wrap;gap:6px;" id="ls-conditions">
+                <label style="cursor:pointer;"><input type="checkbox" value="Diabetes" style="display:none;"
+                    class="ls-cond-input" onchange="toggleChip(this)" /><span class="chip">🩸 Diabetes</span></label>
+                <label style="cursor:pointer;"><input type="checkbox" value="High BP" style="display:none;"
+                    class="ls-cond-input" onchange="toggleChip(this)" /><span class="chip">❤️ High BP</span></label>
+                <label style="cursor:pointer;"><input type="checkbox" value="Thyroid" style="display:none;"
+                    class="ls-cond-input" onchange="toggleChip(this)" /><span class="chip">🦋 Thyroid</span></label>
+                <label style="cursor:pointer;"><input type="checkbox" value="PCOD" style="display:none;"
+                    class="ls-cond-input" onchange="toggleChip(this)" /><span class="chip">💫 PCOD</span></label>
+                <label style="cursor:pointer;"><input type="checkbox" value="Heart Condition" style="display:none;"
+                    class="ls-cond-input" onchange="toggleChip(this)" /><span class="chip">🫀 Heart</span></label>
+                <label style="cursor:pointer;"><input type="checkbox" value="None" style="display:none;"
+                    class="ls-cond-input" onchange="toggleChip(this)" /><span class="chip">✅ None</span></label>
+              </div>
+            </div>
+            <div>
+              <p class="input-label" style="margin-bottom:8px;">Food Preference</p>
+              <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                <label class="radio-card" style="min-width:80px;"><input type="radio" name="ls-diet" value="Vegetarian"
+                    checked />
+                  <div class="radio-card-label" style="padding:8px;font-size:12px;"><i class="fas fa-leaf"></i>Veg</div>
+                </label>
+                <label class="radio-card" style="min-width:80px;"><input type="radio" name="ls-diet"
+                    value="Non-Vegetarian" />
+                  <div class="radio-card-label" style="padding:8px;font-size:12px;"><i
+                      class="fas fa-drumstick-bite"></i>Non-Veg</div>
+                </label>
+                <label class="radio-card" style="min-width:80px;"><input type="radio" name="ls-diet" value="Vegan" />
+                  <div class="radio-card-label" style="padding:8px;font-size:12px;"><i class="fas fa-seedling"></i>Vegan
+                  </div>
+                </label>
+                <label class="radio-card" style="min-width:80px;"><input type="radio" name="ls-diet"
+                    value="Eggetarian" />
+                  <div class="radio-card-label" style="padding:8px;font-size:12px;"><i class="fas fa-egg"></i>Egget.
+                  </div>
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card card-lg" style="margin-bottom:20px;">
+          <div class="grid-2" style="gap:20px;">
+            <div>
+              <p class="input-label" style="margin-bottom:10px;">Activity Level</p>
+              <div class="radio-cards">
+                <label class="radio-card"><input type="radio" name="ls-activity" value="Sedentary" checked />
+                  <div class="radio-card-label"><i class="fas fa-couch"></i>Sedentary</div>
+                </label>
+                <label class="radio-card"><input type="radio" name="ls-activity" value="Lightly Active" />
+                  <div class="radio-card-label"><i class="fas fa-walking"></i>Lightly Active</div>
+                </label>
+                <label class="radio-card"><input type="radio" name="ls-activity" value="Moderately Active" />
+                  <div class="radio-card-label"><i class="fas fa-running"></i>Moderate</div>
+                </label>
+                <label class="radio-card"><input type="radio" name="ls-activity" value="Very Active" />
+                  <div class="radio-card-label"><i class="fas fa-dumbbell"></i>Very Active</div>
+                </label>
+              </div>
+            </div>
+            <div>
+              <p class="input-label" style="margin-bottom:10px;">Your Goal</p>
+              <div class="radio-cards">
+                <label class="radio-card"><input type="radio" name="ls-goal" value="Lose Weight" checked />
+                  <div class="radio-card-label"><i class="fas fa-weight"></i>Lose Weight</div>
+                </label>
+                <label class="radio-card"><input type="radio" name="ls-goal" value="Build Strength" />
+                  <div class="radio-card-label"><i class="fas fa-fist-raised"></i>Build Strength</div>
+                </label>
+                <label class="radio-card"><input type="radio" name="ls-goal" value="Stay Healthy" />
+                  <div class="radio-card-label"><i class="fas fa-smile"></i>Stay Healthy</div>
+                </label>
+                <label class="radio-card"><input type="radio" name="ls-goal" value="Manage Condition" />
+                  <div class="radio-card-label"><i class="fas fa-heartbeat"></i>Manage Condition</div>
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+        <button class="btn btn-primary btn-full" onclick="generateLifestylePlan()">
+          <i class="fas fa-magic"></i> ✨ Generate My 7-Day Plan
+        </button>
+      </div>
+
+      <!-- Results -->
+      <div id="lifestyle-result" style="display:none;">
+        <div id="ls-user-bar"
+          style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:20px;padding:16px 20px;background:var(--card);border:1px solid var(--border);border-radius:12px;align-items:center;">
+        </div>
+        <div class="day-tabs" id="ls-day-tabs"></div>
+        <div id="ls-day-content"></div>
+        <div style="display:flex;gap:10px;margin-top:20px;flex-wrap:wrap;">
+          <button class="btn btn-primary" onclick="window.print()"><i class="fas fa-download"></i> Download Full
+            Plan</button>
+          <button class="btn btn-secondary" onclick="lsReset()"><i class="fas fa-redo"></i> Start Over</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════ SEASONAL AWARENESS ═══════════════════ -->
+    <section class="section" id="section-seasonal">
+      <div class="section-header">
+        <div>
+          <div class="section-title">🌦️ Seasonal Health Awareness</div>
+          <div class="section-subtitle">Health alerts based on your location and current season</div>
+        </div>
+      </div>
+      <div id="seasonal-content">
+        <div class="card card-lg" style="text-align:center;padding:60px 24px;">
+          <div style="font-size:48px;margin-bottom:16px;">📍</div>
+          <h3 style="font-family:var(--font-display);font-size:20px;margin-bottom:8px;">Detecting Your Location...</h3>
+          <p style="color:var(--text-muted);font-size:14px;margin-bottom:20px;">We need your location to show relevant
+            seasonal health alerts.</p>
+          <button class="btn btn-primary" onclick="detectSeason()"><i class="fas fa-map-marker-alt"></i> Allow Location
+            Access</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- ═══════════════════ NEARBY HEALTHCARE ═══════════════════ -->
+    <section class="section" id="section-nearby">
+      <div class="section-header">
+        <div>
+          <div class="section-title">📍 Nearby Healthcare Finder</div>
+          <div class="section-subtitle">Find hospitals, clinics & pharmacies near you</div>
+        </div>
+      </div>
+      <div class="nearby-layout">
+        <!-- List Panel -->
+        <div class="nearby-list">
+          <button class="btn btn-primary btn-full" style="margin-bottom:14px;" onclick="detectNearby()">
+            <i class="fas fa-location-arrow"></i> Detect My Location
+          </button>
+          <p id="nearby-location" style="font-size:12px;color:var(--text-muted);margin-bottom:14px;display:none;"></p>
+          <div class="filter-pills">
+            <button class="filter-pill type-pill active" onclick="filterNearby('all',this)">All</button>
+            <button class="filter-pill type-pill" onclick="filterNearby('hospital',this)">🏥 Hospitals</button>
+            <button class="filter-pill type-pill" onclick="filterNearby('clinic',this)">🩺 Clinics</button>
+            <button class="filter-pill type-pill" onclick="filterNearby('pharmacy',this)">💊 Pharmacies</button>
+          </div>
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px;">
+            <button class="filter-pill radius-pill active" onclick="setRadius(1,this)">1 km</button>
+            <button class="filter-pill radius-pill" onclick="setRadius(2,this)">2 km</button>
+            <button class="filter-pill radius-pill" onclick="setRadius(5,this)">5 km</button>
+            <button class="filter-pill radius-pill" onclick="setRadius(10,this)">10 km</button>
+          </div>
+          <div id="nearby-places">
+            <div style="text-align:center;padding:40px 16px;color:var(--text-muted);">
+              <i class="fas fa-map-pin" style="font-size:36px;margin-bottom:12px;display:block;opacity:0.4;"></i>
+              <p style="font-size:14px;">Allow location access to find healthcare near you.</p>
+            </div>
+          </div>
+        </div>
+        <!-- Map Panel -->
+        <div class="nearby-map" id="nearby-map-panel">
+          <div style="text-align:center;color:var(--text-muted);">
+            <i class="fas fa-map" style="font-size:64px;margin-bottom:16px;display:block;opacity:0.2;"></i>
+            <p style="font-size:16px;font-weight:600;">Map will appear here</p>
+            <p style="font-size:13px;margin-top:6px;">Allow location access to load the map</p>
+            <p style="font-size:11px;margin-top:12px;color:var(--text-muted);font-family:var(--font-mono);">Powered by
+              Google Maps API</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+    // ══════════════════════════════════════════════
+    // CORE SPA LOGIC
+    // ══════════════════════════════════════════════
+    const API = 'http://localhost:8001';
+
+    function showSection(id) {
+      document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+      document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+      const sec = document.getElementById('section-' + id);
+      if (sec) { sec.classList.add('active'); window.scrollTo({ top: 0, behavior: 'smooth' }); }
+      const navBtn = document.querySelector(`[data-section="${id}"]`);
+      if (navBtn) navBtn.classList.add('active');
+      if (window.innerWidth < 1024) closeSidebar();
+    }
+
+    function toggleSidebar() {
+      const sidebar = document.getElementById('sidebar');
+      const overlay = document.getElementById('mobile-overlay');
+      sidebar.classList.toggle('open');
+      overlay.style.display = sidebar.classList.contains('open') ? 'block' : 'none';
+    }
+    function closeSidebar() {
+      document.getElementById('sidebar').classList.remove('open');
+      document.getElementById('mobile-overlay').style.display = 'none';
+    }
+
+    function toggleDark() {
+      document.body.classList.toggle('light-mode');
+      document.getElementById('theme-icon').className = document.body.classList.contains('light-mode') ? 'fas fa-sun' : 'fas fa-moon';
+    }
+
+    // ══════════════════════════════════════════════
+    // TOAST
+    // ══════════════════════════════════════════════
+    function showToast(message, type = 'info', duration = 4000) {
+      const icons = { success: 'check-circle', warning: 'exclamation-triangle', error: 'times-circle', info: 'info-circle' };
+      const colors = { success: '#4ade80', warning: '#fbbf24', error: '#f87171', info: '#60a5fa' };
+      const t = document.createElement('div');
+      t.className = `toast ${type}`;
+      t.innerHTML = `<i class="fas fa-${icons[type]}" style="color:${colors[type]};font-size:16px;flex-shrink:0;"></i><span style="flex:1;">${message}</span><i class="fas fa-times toast-close" onclick="this.parentElement.remove()"></i>`;
+      document.getElementById('toast-container').appendChild(t);
+      setTimeout(() => t.remove(), duration);
+    }
+
+    // ══════════════════════════════════════════════
+    // LOADING
+    // ══════════════════════════════════════════════
+    function showLoading(text = 'Analyzing with AI...') {
+      document.getElementById('loading-text').textContent = text;
+      document.getElementById('loading-overlay').classList.add('show');
+
+      // Show cycling tips to make the wait feel shorter
+      const tips = [
+        '🧠 AI is thinking...',
+        '📊 Processing your data...',
+        '🔍 Analyzing patterns...',
+        '✨ Almost ready...',
+        '⚡ Finalizing results...'
+      ];
+      let tipIdx = 0;
+      window.loadingTipInterval = setInterval(() => {
+        tipIdx = (tipIdx + 1) % tips.length;
+        document.getElementById('loading-text').textContent = tips[tipIdx];
+      }, 3000);
+    }
+    function hideLoading() {
+      document.getElementById('loading-overlay').classList.remove('show');
+      if (window.loadingTipInterval) clearInterval(window.loadingTipInterval);
+    }
+
+    // ══════════════════════════════════════════════
+    // HISTORY
+    // ══════════════════════════════════════════════
+    let currentHistorySection = '';
+    const HISTORY_KEYS = { symptom: 'medimitra_symptom_history', prescription: 'medimitra_prescription_history', scanner: 'medimitra_scanner_history', lifestyle: 'medimitra_lifestyle_history' };
+    const HISTORY_LABELS = { symptom: 'Previous Symptom Checks', prescription: 'Previous Prescriptions', scanner: 'Previous Scans', lifestyle: 'Previous Plans' };
+    const MAX_HISTORY = 20;
+
+    function getHistory(section) {
+      try { return JSON.parse(localStorage.getItem(HISTORY_KEYS[section])) || []; } catch { return []; }
+    }
+    function saveHistory(section, entry) {
+      let h = getHistory(section);
+      h.unshift({ ...entry, id: Date.now(), timestamp: new Date().toLocaleString('en-IN', { day: '2-digit', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' }) });
+      if (h.length > MAX_HISTORY) h = h.slice(0, MAX_HISTORY);
+      localStorage.setItem(HISTORY_KEYS[section], JSON.stringify(h));
+      updateHistoryBadge(section);
+    }
+    function updateHistoryBadge(section) {
+      const count = getHistory(section).length;
+      const badge = document.getElementById(section + '-hist-count');
+      if (badge) { badge.textContent = count; badge.style.display = count > 0 ? 'flex' : 'none'; }
+    }
+    function openHistory(section) {
+      currentHistorySection = section;
+      document.getElementById('history-panel-title').textContent = '📋 ' + HISTORY_LABELS[section];
+      renderHistoryList(section);
+      document.getElementById('history-panel').classList.add('open');
+      document.getElementById('history-overlay').classList.add('show');
+    }
+    function closeHistory() {
+      document.getElementById('history-panel').classList.remove('open');
+      document.getElementById('history-overlay').classList.remove('show');
+    }
+    function renderHistoryList(section) {
+      const entries = getHistory(section);
+      const el = document.getElementById('history-list-content');
+      if (!entries.length) {
+        el.innerHTML = `<div class="history-empty"><i class="fas fa-clock"></i><p style="font-weight:600;margin-bottom:6px;">No history yet</p><p style="font-size:13px;">Your results will appear here after your first analysis.</p></div>`;
+        return;
+      }
+      el.innerHTML = entries.map(e => `
+    <div class="history-entry" onclick="loadHistoryEntry('${section}','${e.id}')">
+      <div class="history-entry-header">
+        <span class="badge badge-${e.badgeType || 'info'}">${e.badge || 'Entry'}</span>
+        <span class="history-entry-time">${e.timestamp}</span>
+      </div>
+      <div class="history-entry-summary">${e.summary}</div>
+      <div class="history-entry-footer">
+        <button class="btn btn-secondary" style="padding:4px 10px;font-size:12px;" onclick="event.stopPropagation();loadHistoryEntry('${section}','${e.id}')"><i class="fas fa-undo"></i> Load</button>
+        <i class="fas fa-trash" style="color:var(--text-muted);cursor:pointer;font-size:13px;" onclick="event.stopPropagation();deleteHistory('${section}','${e.id}')"></i>
+      </div>
+    </div>`).join('');
+    }
+    function deleteHistory(section, id) {
+      let h = getHistory(section).filter(e => String(e.id) !== String(id));
+      localStorage.setItem(HISTORY_KEYS[section], JSON.stringify(h));
+      updateHistoryBadge(section);
+      renderHistoryList(section);
+    }
+    function loadHistoryEntry(section, id) {
+      const entry = getHistory(section).find(e => String(e.id) === String(id));
+      if (!entry) return;
+      closeHistory();
+      showSection(section);
+
+      if (section === 'symptom' && entry.fullData) {
+        renderSymptomResult(entry.fullData);
+      } else if (section === 'prescription' && entry.fullData) {
+        document.getElementById('rx-panel-1').style.display = 'none';
+        document.getElementById('rx-panel-3').style.display = 'block';
+        renderPrescriptionResult(entry.fullData);
+      } else if (section === 'scanner' && entry.fullData) {
+        renderScanResult(entry.fullData);
+      } else if (section === 'lifestyle' && entry.fullData) {
+        renderLifestylePlan(entry.fullData, entry.name || 'User', entry.goal || 'Stay Healthy', entry.activity || 'Sedentary');
+      }
+
+      showToast('History entry loaded successfully', 'success');
+    }
+    ['symptom', 'prescription', 'scanner', 'lifestyle'].forEach(s => updateHistoryBadge(s));
+
+    // ══════════════════════════════════════════════
+    // UTILS
+    // ══════════════════════════════════════════════
+    function updateCharCount(inputId, countId, max) {
+      const val = document.getElementById(inputId).value.length;
+      document.getElementById(countId).textContent = `${val}/${max}`;
+    }
+    function switchTab(containerId, index, btn) {
+      const c = document.getElementById(containerId);
+      c.querySelectorAll('.tab-panel').forEach((p, i) => p.classList.toggle('active', i === index));
+      const tabs = btn.closest('.tabs');
+      tabs.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+    }
+    function toggleChip(input) {
+      const chip = input.nextElementSibling;
+      chip.classList.toggle('active', input.checked);
+    }
+    function startVoice(targetId, btnId) {
+      if (!('webkitSpeechRecognition' in window || 'SpeechRecognition' in window)) { showToast('Voice input not supported in this browser', 'error'); return; }
+      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+      const r = new SR();
+      r.lang = 'en-IN'; r.interimResults = false;
+      const btn = document.getElementById(btnId);
+      btn.classList.add('recording');
+      r.start();
+      r.onresult = e => { document.getElementById(targetId).value += ' ' + e.results[0][0].transcript; updateCharCount(targetId, 'symptom-chars', 500); };
+      r.onend = () => btn.classList.remove('recording');
+      r.onerror = () => { btn.classList.remove('recording'); showToast('Voice recognition error', 'error'); };
+    }
+
+    // ══════════════════════════════════════════════
+    // SYMPTOM CHECKER
+    // ══════════════════════════════════════════════
+    function addSymptom(el, name) {
+      const ta = document.getElementById('symptom-text');
+      ta.value += (ta.value ? ', ' : '') + name;
+      el.classList.toggle('active');
+      updateCharCount('symptom-text', 'symptom-chars', 500);
+    }
+    async function checkSymptoms() {
+      const symptoms = document.getElementById('symptom-text').value.trim();
+      if (!symptoms) { showToast('Please describe your symptoms first', 'warning'); return; }
+      const duration = document.querySelector('[name="duration"]:checked')?.value || '1-3 days';
+      const severity = document.getElementById('severity-slider').value;
+      showLoading('Analyzing symptoms with AI...');
+      try {
+        const res = await fetch(`${API}/api/symptom/check`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ symptoms, duration, severity, language: getActiveLanguage() }) });
+        if (!res.ok) throw new Error('API error');
+        const data = await res.json();
+        renderSymptomResult(data);
+        saveHistory('symptom', { summary: symptoms.slice(0, 60) + (symptoms.length > 60 ? '...' : ''), badge: data.condition || 'Result', badgeType: data.severity === 'Severe' ? 'danger' : data.severity === 'Moderate' ? 'warning' : 'safe', fullData: data });
+        showToast('Analysis complete!', 'success');
+      } catch (e) {
+        showToast('Could not connect to API. Check if backend is running on port 8001.', 'error');
+        // Demo mode
+        renderSymptomResult({ condition: 'Viral Fever', severity: 'Moderate', confidence: 78, explanation: 'This appears to be a common viral fever. Your symptoms of fever, headache, and body pain are consistent with viral infection.', home_remedies: ['Rest and stay hydrated', 'Take paracetamol for fever', 'Warm fluids like soup or kadha'], red_flags: ['High fever above 103°F for more than 3 days', 'Difficulty breathing', 'Severe chest pain or confusion'] });
+      }
+      hideLoading();
+    }
+    function renderSymptomResult(data) {
+      document.getElementById('symptom-empty').style.display = 'none';
+      document.getElementById('symptom-result').style.display = 'block';
+      const severityColor = data.severity === 'Severe' ? 'danger' : data.severity === 'Moderate' ? 'warning' : 'safe';
+      const card = document.getElementById('symptom-result-card');
+      card.className = `result-card ${severityColor}`;
+      document.getElementById('symptom-severity-badge').className = `badge badge-${severityColor}`;
+      document.getElementById('symptom-severity-badge').textContent = data.severity || 'Mild';
+      document.getElementById('symptom-condition').textContent = data.condition || 'Unknown';
+      const conf = data.confidence || 75;
+      document.getElementById('symptom-confidence').textContent = `${conf}% match`;
+      document.getElementById('symptom-conf-bar').style.width = `${conf}%`;
+      document.getElementById('symptom-conf-label').textContent = `Based on AI analysis`;
+      document.getElementById('symptom-tab-0').innerHTML = `<p style="color:var(--text-secondary);line-height:1.8;">${data.explanation || ''}</p>`;
+      document.getElementById('symptom-tab-1').innerHTML = (data.home_remedies || []).map(r => `<div class="dos-card"><i class="fas fa-check" style="color:#4ade80;margin-top:2px;flex-shrink:0;"></i><span style="font-size:14px;">${r}</span></div>`).join('');
+      document.getElementById('symptom-tab-2').innerHTML = (data.red_flags || []).map(r => `<div class="donts-card"><i class="fas fa-exclamation" style="color:#f87171;margin-top:2px;flex-shrink:0;"></i><span style="font-size:14px;">${r}</span></div>`).join('');
+    }
+
+    // ══════════════════════════════════════════════
+    // PRESCRIPTION READER
+    // ══════════════════════════════════════════════
+    let rxFileBase64 = null;
+    function handleRxFile(e) {
+      const file = e.target.files[0]; if (!file) return;
+      const reader = new FileReader();
+      reader.onload = ev => {
+        rxFileBase64 = ev.target.result.split(',')[1];
+        document.getElementById('rx-preview-img').src = ev.target.result;
+        document.getElementById('rx-file-preview').style.display = 'block';
+        document.getElementById('rx-file-name').textContent = '✓ ' + file.name;
+        document.getElementById('rx-submit-btn').disabled = false;
+      };
+      reader.readAsDataURL(file);
+    }
+    function handleRxDrop(e) {
+      e.preventDefault();
+      document.getElementById('rx-upload-zone').classList.remove('drag-over');
+      const file = e.dataTransfer.files[0];
+      if (file) { document.getElementById('rx-file-input').files = e.dataTransfer.files; handleRxFile({ target: { files: e.dataTransfer.files } }); }
+    }
+    async function readPrescription() {
+      if (!rxFileBase64) { showToast('Please upload a prescription image first', 'warning'); return; }
+      const lang = getActiveLanguage();
+      document.getElementById('rx-panel-1').style.display = 'none';
+      document.getElementById('rx-panel-2').style.display = 'block';
+      document.getElementById('rx-step-2').classList.add('active');
+      document.getElementById('rx-line-1').classList.add('done');
+
+      // Start API request in parallel with animations for better speed
+      const apiPromise = fetch(`${API}/api/prescription/read`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ image_base64: rxFileBase64, language: lang })
+      }).then(res => res.ok ? res.json() : { medicines: [], explanation: 'Analyze failed. Please ensure the image is a clear prescription.' })
+        .catch(() => ({ medicines: [], explanation: 'Network error. Please check your connection.' }));
+
+      // Animate progress (made faster)
+      await animateRxStep('rxp-1', 500);
+      document.getElementById('rxp-2').style.opacity = '1';
+      await animateRxStep('rxp-2', 600);
+      document.getElementById('rxp-3').style.opacity = '1';
+      await animateRxStep('rxp-3', 400);
+
+      // Wait for API if it hasn't finished yet
+      const data = await apiPromise;
+
+      renderPrescriptionResult(data);
+      saveHistory('prescription', { summary: `Prescription in ${getActiveLanguage()}`, badge: 'Prescription', badgeType: 'info', fullData: data });
+
+      document.getElementById('rx-panel-2').style.display = 'none';
+      document.getElementById('rx-panel-3').style.display = 'block';
+      document.getElementById('rx-step-3').classList.add('active');
+      document.getElementById('rx-line-2').classList.add('done');
+      showToast('Prescription analyzed successfully!', 'success');
+    }
+    function animateRxStep(id, duration) {
+      return new Promise(resolve => {
+        const bar = document.getElementById(id + '-bar');
+        const check = document.getElementById(id + '-check');
+        let p = 0;
+        const interval = setInterval(() => { p += 2; bar.style.width = p + '%'; if (p >= 100) { clearInterval(interval); check.style.display = 'flex'; resolve(); } }, duration / 50);
+      });
+    }
+    function getDemoPrescriptionData() {
+      return { medicines: [{ name: 'Amoxicillin 500mg', dosage: '1 capsule', frequency: '3 times daily', duration: '7 days', timing: 'After meals' }, { name: 'Paracetamol 650mg', dosage: '1 tablet', frequency: 'As needed', duration: '5 days', timing: 'For fever/pain' }], explanation: 'This prescription is for a bacterial infection. The antibiotic must be completed fully. Paracetamol is for fever management.', translated_text: 'This prescription treats a bacterial infection.' };
+    }
+    function renderPrescriptionResult(data) {
+      const tbody = document.getElementById('rx-table-body');
+      const explanations = document.getElementById('rx-explanations');
+
+      if (!data.medicines || data.medicines.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;padding:48px;color:var(--text-muted);">
+          <div style="font-size:32px;margin-bottom:12px;opacity:0.5;">📋?</div>
+          <p style="font-size:15px;font-weight:600;color:var(--text-secondary);margin-bottom:6px;">No medicines detected</p>
+          <p style="max-width:300px;margin:0 auto;line-height:1.5;">${data.explanation || 'The uploaded image may not be a clear prescription. Please try again with a better photo.'}</p>
+        </td></tr>`;
+        explanations.innerHTML = '';
+        return;
+      }
+
+      const timingColors = { Morning: 'warning', Afternoon: 'info', Night: 'purple', 'After meals': 'safe', 'For fever/pain': 'warning', 'As needed': 'info' };
+      tbody.innerHTML = (data.medicines || []).map((m, i) => `
+    <tr style="background:${i % 2 === 0 ? 'transparent' : 'rgba(255,255,255,0.02)'};">
+      <td style="padding:10px 14px;font-weight:700;border-bottom:1px solid var(--border);">${m.name}</td>
+      <td style="padding:10px 14px;border-bottom:1px solid var(--border);">${m.dosage}</td>
+      <td style="padding:10px 14px;border-bottom:1px solid var(--border);">${m.frequency}</td>
+      <td style="padding:10px 14px;border-bottom:1px solid var(--border);"><span class="badge badge-${timingColors[m.timing] || 'info'}">${m.timing || m.duration}</span></td>
+    </tr>`).join('');
+      explanations.innerHTML = (data.medicines || []).map(m => `
+    <div class="card card-lg">
+      <h4 style="font-family:var(--font-display);font-size:16px;font-weight:700;margin-bottom:12px;color:var(--primary-light);">${m.name}</h4>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;font-size:13px;">
+        <div><span style="color:var(--text-muted);font-weight:600;">What it is:</span><p style="color:var(--text-secondary);margin-top:2px;">${m.what_it_is || 'An antibiotic/analgesic medicine for treating infection or pain.'}</p></div>
+        <div><span style="color:var(--text-muted);font-weight:600;">What it treats:</span><p style="color:var(--text-secondary);margin-top:2px;">${m.what_it_treats || 'Bacterial infections, fever and pain management.'}</p></div>
+      </div>
+      <div style="margin-top:10px;padding:10px;background:rgba(217,119,6,0.08);border-radius:8px;font-size:12px;color:#fbbf24;">
+        ⚠️ <strong>Side effects to watch:</strong> ${m.side_effects || 'Nausea, allergic reactions, stomach upset. Consult doctor if severe.'}
+      </div>
+    </div>`).join('');
+    }
+
+    // ══════════════════════════════════════════════
+    // FEEDBACK SYSTEM
+    // ══════════════════════════════════════════════
+    let currentRating = 0;
+    function setRating(n) {
+      currentRating = n;
+      const stars = document.querySelectorAll('.feedback-star');
+      stars.forEach((s, idx) => {
+        if (idx < n) {
+          s.style.color = '#fbbf24';
+          s.classList.replace('far', 'fas');
+        } else {
+          s.style.color = '#94a3b8';
+          s.classList.replace('fas', 'far');
+        }
+      });
+    }
+    async function submitFeedback() {
+      if (currentRating === 0) { showToast('Please select a star rating', 'warning'); return; }
+
+      const text = document.getElementById('feedback-text').value;
+
+      try {
+        const response = await fetch(`${API}/api/feedback/submit`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            rating: currentRating,
+            feedback_text: text || ""
+          })
+        });
+
+        const data = await response.json();
+        if (data.status === 'success') {
+          showToast('Thank you for your valuable feedback!', 'success');
+          document.getElementById('feedback-text').value = '';
+          setRating(0);
+        } else {
+          showToast('Failed to submit: ' + data.message, 'error');
+        }
+      } catch (error) {
+        showToast('Submission error. Please check your connection.', 'error');
+      }
+    }
+
+    function toggleReadAloud() {
+      if (window.speechSynthesis.speaking) {
+        window.speechSynthesis.cancel();
+        document.getElementById('rx-read-btn').innerHTML = '<i class="fas fa-volume-up"></i> Read Aloud';
+        showToast('Speech stopped', 'info');
+      } else {
+        readAloud();
+      }
+    }
+
+    function readAloud() {
+      const text = document.getElementById('rx-explanations').innerText || document.getElementById('rx-table').innerText;
+      if (!text || text.includes('No medicines detected')) return;
+
+      const lang = getActiveLanguage();
+      const u = new SpeechSynthesisUtterance(text);
+
+      // Native Voice Support for 7+ Languages
+      const voiceMap = {
+        'Hindi': 'hi-IN',
+        'Bengali': 'bn-IN',
+        'Odia': 'or-IN',
+        'Tamil': 'ta-IN',
+        'Telugu': 'te-IN',
+        'Marathi': 'mr-IN',
+        'English': 'en-IN'
+      };
+      u.lang = voiceMap[lang] || 'en-IN';
+
+      u.onstart = () => {
+        document.getElementById('rx-read-btn').innerHTML = '<i class="fas fa-pause"></i> Stop Reading';
+      };
+      u.onend = () => {
+        document.getElementById('rx-read-btn').innerHTML = '<i class="fas fa-volume-up"></i> Read Aloud';
+      };
+
+      window.speechSynthesis.speak(u);
+      showToast('Reading aloud...', 'info');
+    }
+    function rxReset() {
+      rxFileBase64 = null;
+      document.getElementById('rx-file-input').value = '';
+      document.getElementById('rx-file-preview').style.display = 'none';
+      document.getElementById('rx-submit-btn').disabled = true;
+      ['rx-panel-1', 'rx-panel-2', 'rx-panel-3'].forEach((id, i) => document.getElementById(id).style.display = i === 0 ? 'block' : 'none');
+      ['rx-step-1', 'rx-step-2', 'rx-step-3'].forEach((id, i) => { const el = document.getElementById(id); el.classList.toggle('active', i === 0); el.classList.remove('done'); });
+      ['rx-line-1', 'rx-line-2'].forEach(id => document.getElementById(id).classList.remove('done'));
+      ['rxp-1-bar', 'rxp-2-bar', 'rxp-3-bar'].forEach(id => { const el = document.getElementById(id); if (el) el.style.width = '0%'; });
+      ['rxp-1-check', 'rxp-2-check', 'rxp-3-check'].forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
+      ['rxp-2', 'rxp-3'].forEach(id => { const el = document.getElementById(id); if (el) el.style.opacity = '0.4'; });
+    }
+
+    // ══════════════════════════════════════════════
+    // DRUG INTERACTION
+    // ══════════════════════════════════════════════
+    const commonDrugs = ['Aspirin', 'Paracetamol', 'Ibuprofen', 'Amoxicillin', 'Metformin', 'Atorvastatin', 'Lisinopril', 'Warfarin', 'Omeprazole', 'Cetirizine', 'Azithromycin', 'Metronidazole', 'Doxycycline', 'Ciprofloxacin', 'Pantoprazole', 'Amlodipine', 'Losartan', 'Gabapentin', 'Sertraline', 'Levothyroxine'];
+    let selectedDrugs = [];
+    function drugAutocomplete(val) {
+      const dd = document.getElementById('drug-dropdown');
+      if (!val.trim()) { dd.classList.remove('open'); return; }
+      const matches = commonDrugs.filter(d => d.toLowerCase().includes(val.toLowerCase()) && !selectedDrugs.includes(d)).slice(0, 6);
+      dd.innerHTML = matches.map(m => `<div class="autocomplete-item" onclick="selectDrug('${m}')">${m}</div>`).join('') || '<div class="autocomplete-item" style="color:var(--text-muted);">No matches found</div>';
+      dd.classList.add('open');
+    }
+    function selectDrug(name) {
+      document.getElementById('drug-search').value = '';
+      document.getElementById('drug-dropdown').classList.remove('open');
+      addDrug(name);
+    }
+    function addDrug(name) {
+      if (selectedDrugs.includes(name) || selectedDrugs.length >= 10) return;
+      selectedDrugs.push(name);
+      renderDrugChips();
+    }
+    function addDrugFromInput() {
+      const val = document.getElementById('drug-search').value.trim();
+      if (val) { addDrug(val); document.getElementById('drug-search').value = ''; document.getElementById('drug-dropdown').classList.remove('open'); }
+    }
+    function removeDrug(name) {
+      selectedDrugs = selectedDrugs.filter(d => d !== name);
+      renderDrugChips();
+    }
+    function renderDrugChips() {
+      document.getElementById('drug-chips').innerHTML = selectedDrugs.map(d => `<span class="med-chip">${d}<span class="remove" onclick="removeDrug('${d}')"><i class="fas fa-times"></i></span></span>`).join('');
+      document.getElementById('drug-check-btn').disabled = selectedDrugs.length < 2;
+    }
+    async function checkInteractions() {
+      if (selectedDrugs.length < 2) { showToast('Add at least 2 medicines', 'warning'); return; }
+      showLoading('Checking drug interactions...');
+      try {
+        const res = await fetch(`${API}/api/interaction/check`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ medicines: selectedDrugs, language: getActiveLanguage() }) });
+        const data = res.ok ? await res.json() : getDemoInteractionData();
+        renderInteractionResult(data);
+        showToast('Interaction check complete!', 'success');
+      } catch {
+        renderInteractionResult(getDemoInteractionData());
+      }
+      hideLoading();
+    }
+    function getDemoInteractionData() {
+      const drugs = selectedDrugs;
+      const interactions = [];
+      if (drugs.includes('Warfarin') && drugs.includes('Ibuprofen')) interactions.push({ drug_a: 'Warfarin', drug_b: 'Ibuprofen', risk: 'Dangerous', explanation: 'Significantly increases bleeding risk including gastrointestinal hemorrhage.', recommendation: 'Avoid this combination. Use Acetaminophen as alternative.' });
+      if (drugs.includes('Lisinopril') && drugs.includes('Ibuprofen')) interactions.push({ drug_a: 'Lisinopril', drug_b: 'Ibuprofen', risk: 'Moderate', explanation: 'May reduce blood pressure-lowering effect and increase kidney dysfunction risk.', recommendation: 'Monitor blood pressure regularly. Kidney function tests advised.' });
+      const riskLevel = interactions.some(i => i.risk === 'Dangerous') ? 'Dangerous' : interactions.length > 0 ? 'Moderate' : 'Safe';
+      return { risk_level: riskLevel, interactions, details: interactions };
+    }
+    function renderInteractionResult(data) {
+      document.getElementById('drug-empty').style.display = 'none';
+      document.getElementById('drug-result').style.display = 'block';
+      const bannerConfigs = { Safe: { bg: 'rgba(22,163,74,0.1)', border: 'rgba(22,163,74,0.3)', color: '#4ade80', icon: 'check-circle', text: '✅ No dangerous interactions found between your medicines.' }, Moderate: { bg: 'rgba(217,119,6,0.1)', border: 'rgba(217,119,6,0.3)', color: '#fbbf24', icon: 'exclamation-triangle', text: '⚠️ Some moderate interactions detected. Review below.' }, Dangerous: { bg: 'rgba(220,38,38,0.1)', border: 'rgba(220,38,38,0.3)', color: '#f87171', icon: 'times-circle', text: '🚨 Dangerous interaction found! Consult your doctor immediately.' } };
+      const cfg = bannerConfigs[data.risk_level] || bannerConfigs.Safe;
+      document.getElementById('drug-risk-banner').style.cssText = `background:${cfg.bg};border:1px solid ${cfg.border};padding:18px 20px;display:flex;align-items:center;gap:14px;`;
+      document.getElementById('drug-risk-banner').innerHTML = `<i class="fas fa-${cfg.icon}" style="color:${cfg.color};font-size:28px;flex-shrink:0;"></i><div><p style="font-size:16px;font-weight:700;color:${cfg.color};">${data.risk_level} Risk</p><p style="font-size:14px;color:var(--text-secondary);margin-top:2px;">${cfg.text}</p></div>`;
+      // Matrix
+      const drugs = selectedDrugs;
+      let matrix = `<table class="matrix-table"><thead><tr><th></th>${drugs.map(d => `<th>${d}</th>`).join('')}</tr></thead><tbody>`;
+      drugs.forEach((d1, i) => {
+        matrix += `<tr><th style="text-align:left;">${d1}</th>`;
+        drugs.forEach((d2, j) => {
+          if (i === j) { matrix += `<td class="cell-na">—</td>`; return; }
+          const inter = (data.interactions || []).find(x => (x.drug_a === d1 && x.drug_b === d2) || (x.drug_a === d2 && x.drug_b === d1));
+          if (!inter) { matrix += `<td><span class="matrix-cell-safe"><i class="fas fa-check-circle"></i></span></td>`; }
+          else if (inter.risk === 'Dangerous') { matrix += `<td title="${inter.explanation}"><span class="matrix-cell-danger"><i class="fas fa-times-circle"></i></span></td>`; }
+          else { matrix += `<td title="${inter.explanation}"><span class="matrix-cell-warn"><i class="fas fa-exclamation-circle"></i></span></td>`; }
+        });
+        matrix += `</tr>`;
+      });
+      matrix += '</tbody></table>';
+      document.getElementById('drug-matrix').innerHTML = matrix;
+      // Detail cards
+      const riskColors = { Dangerous: 'danger', Moderate: 'warning', Mild: 'warning' };
+      document.getElementById('drug-detail-cards').innerHTML = (data.interactions || []).map(i => `
+    <div class="result-card ${riskColors[i.risk] || 'warning'}" style="margin-bottom:12px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+        <span class="badge badge-${riskColors[i.risk] || 'warning'}">${i.risk} Risk</span>
+        <i class="fas fa-${i.risk === 'Dangerous' ? 'times-circle' : 'exclamation-circle'}" style="color:${i.risk === 'Dangerous' ? '#f87171' : '#fbbf24'};"></i>
+      </div>
+      <h4 style="font-family:var(--font-display);font-size:16px;font-weight:700;margin-bottom:8px;">${i.drug_a} + ${i.drug_b}</h4>
+      <p style="font-size:13px;color:var(--text-secondary);margin-bottom:10px;line-height:1.7;">${i.explanation}</p>
+      <div style="background:rgba(255,255,255,0.04);padding:10px;border-radius:8px;font-size:12px;"><strong>Recommendation:</strong> ${i.recommendation}</div>
+    </div>`).join('');
+    }
+    function startVoiceDrug() {
+      if (!('webkitSpeechRecognition' in window)) { showToast('Voice not supported', 'error'); return; }
+      const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
+      const r = new SR(); r.lang = 'en-IN';
+      r.onresult = e => { const words = e.results[0][0].transcript.split(/,|and/i); words.forEach(w => { const t = w.trim(); if (t) addDrug(t); }); };
+      r.start();
+      showToast('Listening... speak medicine names separated by "and"', 'info');
+    }
+
+    // ══════════════════════════════════════════════
+    // MEDICINE SCANNER
+    // ══════════════════════════════════════════════
+    let scanFileBase64 = null;
+    function handleScanFile(e) {
+      const file = e.target.files[0]; if (!file) return;
+      const r = new FileReader();
+      r.onload = ev => {
+        scanFileBase64 = ev.target.result.split(',')[1];
+        document.getElementById('scan-preview-img').src = ev.target.result;
+        document.getElementById('scan-preview').style.display = 'block';
+        document.getElementById('scan-submit-btn').disabled = false;
+      };
+      r.readAsDataURL(file);
+    }
+    function clearScan() {
+      scanFileBase64 = null;
+      document.getElementById('scan-file').value = '';
+      document.getElementById('scan-preview').style.display = 'none';
+      document.getElementById('scan-submit-btn').disabled = true;
+      document.getElementById('scan-result').style.display = 'none';
+    }
+    async function scanMedicine() {
+      if (!scanFileBase64) { showToast('Please upload or capture a medicine image', 'warning'); return; }
+      const medName = document.getElementById('scan-med-name').value;
+      showLoading('Scanning medicine packaging...');
+      try {
+        const res = await fetch(`${API}/api/scanner/verify`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ image_base64: scanFileBase64, medicine_name: medName, language: getActiveLanguage() }) });
+        const data = res.ok ? await res.json() : getDemoScanData();
+        renderScanResult(data);
+        saveHistory('scanner', { summary: medName || 'Medicine Scan', badge: data.verdict === 'Genuine' ? 'Genuine' : data.verdict === 'Suspicious' ? 'Suspicious' : 'Counterfeit', badgeType: data.verdict === 'Genuine' ? 'safe' : data.verdict === 'Suspicious' ? 'warning' : 'danger', fullData: data });
+        showToast('Scan complete!', 'success');
+      } catch {
+        const demo = getDemoScanData();
+        renderScanResult(demo);
+      }
+      hideLoading();
+    }
+    function getDemoScanData() {
+      return { safety_score: 88, verdict: 'Genuine', details: { drug_name: 'Paracetamol 500mg', manufacturer: 'Sun Pharma', batch_number: 'SP-2024-789', expiry: 'Dec 2026', openfda_status: 'Verified' }, actions: ['Medicine appears genuine. Safe to use as prescribed.', 'Always check expiry date before consuming.', 'Store in a cool, dry place away from sunlight.'] };
+    }
+    function renderScanResult(data) {
+      document.getElementById('scan-result').style.display = 'block';
+      const score = data.safety_score || 75;
+      const isGenuine = score >= 70;
+      const isSuspicious = score >= 40 && score < 70;
+      const color = isGenuine ? '#4ade80' : isSuspicious ? '#fbbf24' : '#f87171';
+      // Animate score
+      let current = 0;
+      const scoreEl = document.getElementById('scan-score-num');
+      const ring = document.getElementById('scan-score-ring');
+      ring.style.stroke = color;
+      const circumference = 377;
+      const interval = setInterval(() => {
+        current = Math.min(current + 2, score);
+        scoreEl.textContent = current;
+        ring.style.strokeDashoffset = circumference - (circumference * current / 100);
+        if (current >= score) clearInterval(interval);
+      }, 20);
+      const verdicts = { Genuine: { icon: 'check-circle', color: '#4ade80', text: '✅ LIKELY GENUINE' }, Suspicious: { icon: 'exclamation-triangle', color: '#fbbf24', text: '⚠️ SUSPICIOUS — VERIFY BEFORE USE' }, Counterfeit: { icon: 'times-circle', color: '#f87171', text: '❌ LIKELY COUNTERFEIT — DO NOT USE' } };
+      const v = verdicts[data.verdict] || verdicts.Genuine;
+      document.getElementById('scan-verdict').innerHTML = `<span style="color:${v.color};">${v.text}</span>`;
+      const d = data.details || {};
+      document.getElementById('scan-details').innerHTML = [
+        ['Drug Name', d.drug_name || '—'], ['Manufacturer', d.manufacturer || '—'],
+        ['Batch Number', d.batch_number || '—'], ['Expiry Date', d.expiry || '—'],
+        ['OpenFDA Status', `<span class="badge badge-${d.openfda_status === 'Verified' ? 'safe' : 'danger'}">${d.openfda_status || 'Unknown'}</span>`]
+      ].map((r, i) => `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);font-size:13px;"><span style="color:var(--text-muted);">${r[0]}</span><span style="font-weight:600;">${r[1]}</span></div>`).join('');
+      document.getElementById('scan-actions').innerHTML = (data.actions || []).map((a, i) => `<div style="display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);font-size:13px;"><span style="background:var(--primary);color:#fff;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:11px;font-weight:700;">${i + 1}</span>${a}</div>`).join('');
+    }
+    function startCamera(type) {
+      const constraints = { video: { facingMode: 'environment' } };
+      navigator.mediaDevices.getUserMedia(constraints)
+        .then(stream => {
+          const targetImg = type === 'rx' ? 'rx-preview-img' : 'scan-preview-img';
+          const targetPreview = type === 'rx' ? 'rx-file-preview' : 'scan-preview';
+          const targetBtn = type === 'rx' ? 'rx-submit-btn' : 'scan-submit-btn';
+          const video = document.createElement('video');
+          video.srcObject = stream;
+          video.play();
+          // Capture after 1.5 seconds
+          setTimeout(() => {
+            const canvas = document.createElement('canvas');
+            canvas.width = video.videoWidth || 640;
+            canvas.height = video.videoHeight || 480;
+            canvas.getContext('2d').drawImage(video, 0, 0);
+            stream.getTracks().forEach(t => t.stop());
+            const dataUrl = canvas.toDataURL('image/jpeg');
+            document.getElementById(targetImg).src = dataUrl;
+            document.getElementById(targetPreview).style.display = 'block';
+            document.getElementById(targetBtn).disabled = false;
+            if (type === 'rx') {
+              rxFileBase64 = dataUrl.split(',')[1];
+              document.getElementById('rx-file-name').textContent = '✓ Photo captured';
+            } else {
+              scanFileBase64 = dataUrl.split(',')[1];
+            }
+            showToast('Photo captured successfully!', 'success');
+          }, 1500);
+          showToast('Camera opened — capturing in 1.5 seconds...', 'info');
+        })
+        .catch(() => {
+          showToast('Camera not available. Please use Upload Image instead.', 'warning');
+        });
+    }
+
+    // ══════════════════════════════════════════════
+    // LIFESTYLE ADVISOR
+    // ══════════════════════════════════════════════
+    function calcBMI() {
+      const h = parseFloat(document.getElementById('ls-height').value);
+      const w = parseFloat(document.getElementById('ls-weight').value);
+      if (!h || !w) { document.getElementById('bmi-display').style.display = 'none'; return; }
+      const bmi = (w / ((h / 100) ** 2)).toFixed(1);
+      let cat = 'Normal', cls = 'normal';
+      if (bmi < 18.5) { cat = 'Underweight'; cls = 'underweight'; }
+      else if (bmi < 25) { cat = 'Normal'; cls = 'normal'; }
+      else if (bmi < 30) { cat = 'Overweight'; cls = 'overweight'; }
+      else { cat = 'Obese'; cls = 'obese'; }
+      document.getElementById('bmi-display').style.display = 'flex';
+      document.getElementById('bmi-value').textContent = bmi;
+      document.getElementById('bmi-chip').className = `bmi-chip bmi-${cls}`;
+      document.getElementById('bmi-chip').textContent = cat;
+    }
+    async function generateLifestylePlan() {
+      const name = document.getElementById('ls-name').value.trim() || 'User';
+      const age = document.getElementById('ls-age').value;
+      const height = document.getElementById('ls-height').value;
+      const weight = document.getElementById('ls-weight').value;
+      if (!age || !height || !weight) { showToast('Please fill in age, height and weight', 'warning'); return; }
+      const conditions = Array.from(document.querySelectorAll('.ls-cond-input:checked')).map(i => i.value);
+      const activity = document.querySelector('[name="ls-activity"]:checked')?.value || 'Sedentary';
+      const goal = document.querySelector('[name="ls-goal"]:checked')?.value || 'Stay Healthy';
+      const diet = document.querySelector('[name="ls-diet"]:checked')?.value || 'Vegetarian';
+      showLoading('Generating your personalized 7-day plan...');
+      try {
+        const res = await fetch(`${API}/api/lifestyle/plan`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ age, height, weight, conditions, activity, goal, diet, language: getActiveLanguage() }) });
+        const data = res.ok ? await res.json() : getDemoLifestyleData(name, goal, diet);
+        renderLifestylePlan(data, name, goal, activity);
+        saveHistory('lifestyle', { summary: `${goal} plan for ${name}`, badge: '7-Day Plan', badgeType: 'safe', fullData: data, name, goal, activity });
+        showToast('Your 7-day plan is ready!', 'success');
+      } catch {
+        renderLifestylePlan(getDemoLifestyleData(name, goal, diet), name, goal, activity);
+      }
+      hideLoading();
+    }
+    function getDemoLifestyleData(name, goal, diet) {
+      const days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+      return { bmi: 22.8, plan: days.map((day, i) => ({ day, morning: { time: '6:30 AM', drink: 'Warm lemon water with honey', activity: '10 min light stretching' }, meals: { breakfast: `Oatmeal with nuts and fruits (320 kcal)`, snack1: 'Handful of almonds', lunch: `Mixed dal with brown rice and salad (450 kcal)`, snack2: 'Green tea with a fruit', dinner: `Vegetable soup with 2 chapatis (380 kcal)`, total_calories: 1800 }, exercise: { type: i % 2 === 0 ? 'Cardio' : 'Strength Training', duration: '45 minutes', intensity: i < 4 ? 'Moderate' : 'Low-Moderate', routine: ['Warm up 5 min', 'Main workout 35 min', 'Cool down 5 min'] }, wellness: { water: '2.5 Liters', sleep: '7-8 hours', tip: 'Practice deep breathing for 5 minutes before bed.' } })) }
+    }
+    function renderLifestylePlan(data, name, goal, activity) {
+      document.getElementById('lifestyle-form').style.display = 'none';
+      document.getElementById('lifestyle-result').style.display = 'block';
+      const bmi = document.getElementById('bmi-value').textContent;
+      const bmiCat = document.getElementById('bmi-chip').textContent;
+      document.getElementById('ls-user-bar').innerHTML = `
+    <span style="font-weight:700;font-size:15px;margin-right:8px;">${name}</span>
+    ${bmi ? `<span class="badge badge-safe">BMI: ${bmi} (${bmiCat})</span>` : ''}
+    <span class="badge badge-info">🎯 ${goal}</span>
+    <span class="badge badge-purple">🏃 ${activity}</span>`;
+      const days = data.plan || [];
+      const dayNames = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+      document.getElementById('ls-day-tabs').innerHTML = days.map((d, i) => `<button class="day-tab ${i === 0 ? 'active' : ''}" onclick="showDayPlan(${i},this)">${dayNames[i] || d.day}</button>`).join('');
+      window.lsPlanData = days;
+      showDayPlanContent(0);
+    }
+    function showDayPlan(idx, btn) {
+      document.querySelectorAll('.day-tab').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      showDayPlanContent(idx);
+    }
+    function showDayPlanContent(idx) {
+      const d = window.lsPlanData[idx];
+      if (!d) return;
+      document.getElementById('ls-day-content').innerHTML = `
+    <div class="day-plan-grid">
+      <div class="day-plan-card morning">
+        <div class="day-plan-title"><i class="fas fa-sun" style="color:#fbbf24;"></i>🌅 Morning Routine</div>
+        <div class="day-plan-item">⏰ Wake up: ${d.morning?.time || '6:30 AM'}</div>
+        <div class="day-plan-item">💧 Morning drink: ${d.morning?.drink || 'Warm lemon water'}</div>
+        <div class="day-plan-item">🧘 Activity: ${d.morning?.activity || 'Stretching'}</div>
+      </div>
+      <div class="day-plan-card meal">
+        <div class="day-plan-title"><i class="fas fa-utensils" style="color:#4ade80;"></i>🍽️ Meal Plan</div>
+        <div class="day-plan-item">🌅 Breakfast: ${d.meals?.breakfast || 'Oatmeal'}</div>
+        <div class="day-plan-item">🍎 Snack: ${d.meals?.snack1 || 'Almonds'}</div>
+        <div class="day-plan-item">☀️ Lunch: ${d.meals?.lunch || 'Dal rice'}</div>
+        <div class="day-plan-item">🌆 Snack: ${d.meals?.snack2 || 'Fruit'}</div>
+        <div class="day-plan-item">🌙 Dinner: ${d.meals?.dinner || 'Soup chapati'}</div>
+        <div style="margin-top:8px;"><span class="badge badge-safe">~${d.meals?.total_calories || 1800} kcal</span></div>
+      </div>
+      <div class="day-plan-card exercise">
+        <div class="day-plan-title"><i class="fas fa-dumbbell" style="color:#2dd4bf;"></i>🏃 Exercise</div>
+        <div class="day-plan-item">Type: <strong>${d.exercise?.type || 'Cardio'}</strong></div>
+        <div class="day-plan-item">Duration: ${d.exercise?.duration || '45 min'}</div>
+        <div class="day-plan-item">Intensity: ${d.exercise?.intensity || 'Moderate'}</div>
+        ${(d.exercise?.routine || []).map((r, i) => `<div class="day-plan-item">${i + 1}. ${r}</div>`).join('')}
+      </div>
+      <div class="day-plan-card wellness">
+        <div class="day-plan-title"><i class="fas fa-droplet" style="color:#60a5fa;"></i>💧 Wellness</div>
+        <div class="day-plan-item">💧 Water: <strong>${d.wellness?.water || '2.5L'}</strong></div>
+        <div class="day-plan-item">😴 Sleep: <strong>${d.wellness?.sleep || '7-8 hours'}</strong></div>
+        <div style="margin-top:10px;padding:10px;background:rgba(96,165,250,0.1);border-radius:8px;font-size:12px;color:#93c5fd;line-height:1.6;">
+          💡 ${d.wellness?.tip || 'Practice mindfulness for 5 minutes before bed.'}
+        </div>
+      </div>
+    </div>`;
+    }
+    function lsReset() {
+      document.getElementById('lifestyle-form').style.display = 'block';
+      document.getElementById('lifestyle-result').style.display = 'none';
+    }
+
+    // ══════════════════════════════════════════════
+    // SEASONAL AWARENESS
+    // ══════════════════════════════════════════════
+    function detectSeason() {
+      if (!navigator.geolocation) { renderSeasonalContent('Bhubaneswar, Odisha'); return; }
+      showLoading('Detecting your location...');
+      navigator.geolocation.getCurrentPosition(async pos => {
+        hideLoading();
+        await loadSeasonalData(pos.coords.latitude, pos.coords.longitude);
+      }, () => { hideLoading(); loadSeasonalData(20.2961, 85.8245); });
+    }
+    async function loadSeasonalData(lat, lon) {
+      const month = new Date().getMonth() + 1;
+      showLoading('Loading seasonal health data...');
+      try {
+        const res = await fetch(`${API}/api/seasonal/alerts`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ latitude: lat, longitude: lon, month, language: getActiveLanguage() }) });
+        const data = res.ok ? await res.json() : getDemoSeasonalData(month);
+        renderSeasonalContent('Your Location', data);
+      } catch {
+        renderSeasonalContent('Bhubaneswar, Odisha', getDemoSeasonalData(month));
+      }
+      hideLoading();
+    }
+    function getDemoSeasonalData(month) {
+      const isMonsoon = month >= 6 && month <= 9, isWinter = month <= 2 || month >= 11, isSummer = month >= 3 && month <= 5;
+      if (isMonsoon) return { season: 'Monsoon', alert: '🦟 High risk of Dengue, Malaria & Cholera in your area', diseases: [{ name: 'Dengue Fever', risk: 'High', symptoms: ['High fever', 'Severe headache', 'Joint pain', 'Rash'], prevention: 'Use mosquito repellent, wear full sleeves, eliminate stagnant water' }, { name: 'Malaria', risk: 'High', symptoms: ['Fever with chills', 'Sweating', 'Headache', 'Vomiting'], prevention: 'Sleep under mosquito nets, take prophylaxis if prescribed' }, { name: 'Cholera', risk: 'Medium', symptoms: ['Watery diarrhoea', 'Dehydration', 'Muscle cramps'], prevention: 'Drink only boiled water, avoid street food' }], dos: ['Use mosquito repellent daily', 'Keep surroundings clean and dry', 'Drink only boiled/filtered water', 'Eat freshly cooked food', 'Cover water storage containers'], donts: ['Dont let water stagnate near your home', 'Avoid eating raw food from outside', 'Dont ignore fever lasting more than 2 days', 'Avoid wading in flood water'], diet_tips: ['Eat warm soups and herbal teas', 'Include turmeric in your diet — it boosts immunity', 'Avoid raw salads and uncooked vegetables', 'Eat light, easily digestible meals'], season_css: 'monsoon' };
+      if (isWinter) return { season: 'Winter', alert: '🤧 Flu, Cold & Respiratory infections are common this season', diseases: [{ name: 'Influenza (Flu)', risk: 'High', symptoms: ['Fever', 'Cough', 'Body ache', 'Fatigue'], prevention: 'Get annual flu vaccine, wash hands frequently' }, { name: 'Cold & Rhinitis', risk: 'High', symptoms: ['Runny nose', 'Sneezing', 'Sore throat'], prevention: 'Keep warm, avoid cold drinks' }, { name: 'Asthma Attacks', risk: 'Medium', symptoms: ['Wheezing', 'Breathlessness', 'Chest tightness'], prevention: 'Carry inhaler, avoid cold air exposure' }], dos: ['Get flu vaccination', 'Keep yourself warm at all times', 'Drink warm fluids throughout the day', 'Wash hands frequently with soap', 'Exercise indoors to stay active'], donts: ['Dont go out in extreme cold without protective clothing', 'Avoid cold water and ice cream', 'Dont ignore persistent cough or fever', 'Avoid close contact with sick people'], diet_tips: ['Drink hot ginger tea with honey', 'Eat citrus fruits rich in Vitamin C', 'Include garlic and turmeric in cooking', 'Consume warm soups and broths'], season_css: 'winter' };
+      return { season: 'Summer', alert: '🥵 Heatstroke, Dehydration & Food poisoning risk is high', diseases: [{ name: 'Heat Stroke', risk: 'High', symptoms: ['High body temperature', 'Confusion', 'No sweating', 'Rapid heartbeat'], prevention: 'Stay hydrated, avoid outdoor activity 12pm–4pm' }, { name: 'Dehydration', risk: 'High', symptoms: ['Dizziness', 'Dark urine', 'Dry mouth', 'Fatigue'], prevention: 'Drink at least 3-4 litres of water daily' }, { name: 'Food Poisoning', risk: 'Medium', symptoms: ['Vomiting', 'Diarrhoea', 'Stomach cramps', 'Fever'], prevention: 'Eat freshly prepared food, refrigerate leftovers' }], dos: ['Drink at least 3-4 litres of water daily', 'Stay indoors between 12pm and 4pm', 'Wear light-coloured loose clothing', 'Eat light, small meals frequently', 'Carry water whenever going out'], donts: ['Dont skip meals or water', 'Avoid heavy outdoor exercise in peak heat', 'Dont eat stale or uncovered food', 'Avoid alcohol and carbonated drinks'], diet_tips: ['Drink coconut water, lassi and buttermilk', 'Eat watermelon and cucumber daily', 'Include mint and coriander in meals', 'Avoid spicy and oily foods'], season_css: 'summer' };
+    }
+    function shareSeasonal() {
+      const data = window.lastSeasonalData;
+      if (!data) return;
+      const text = `🏥 MediMitra ${data.season} Health Alert\n\n` +
+        `⚠️ Alert: ${data.alert}\n\n` +
+        `✅ Top 3 Do's:\n${(data.dos || []).slice(0, 3).map(d => '• ' + d).join('\n')}\n\n` +
+        `❌ Top 3 Don'ts:\n${(data.donts || []).slice(0, 3).map(d => '• ' + d).join('\n')}\n\n` +
+        `🥗 Diet Tip:\n${(data.diet_tips || [])[0] || 'Eat seasonal fruits'}\n\n` +
+        `Stay safe! Check more on MediMitra.`;
+
+      if (navigator.share) {
+        navigator.share({
+          title: `MediMitra: ${data.season} Health Guide`,
+          text: text,
+          url: window.location.href
+        }).catch(console.error);
+      } else {
+        // Fallback for browsers without navigator.share
+        const dummy = document.createElement('textarea');
+        dummy.value = text;
+        document.body.appendChild(dummy);
+        dummy.select();
+        try {
+          document.execCommand('copy');
+          showToast('Info copied to clipboard! Share it anywhere.', 'success');
+        } catch (err) {
+          showToast('Could not copy automatically.', 'error');
+        }
+        document.body.removeChild(dummy);
+      }
+    }
+    function renderSeasonalContent(location, data) {
+      window.lastSeasonalData = data;
+      const seasonEmojis = { Monsoon: '🌧️', Winter: '❄️', Summer: '☀️' };
+      document.getElementById('seasonal-content').innerHTML = `
+    <div class="season-banner ${data.season_css || 'summer'}">
+      <div class="season-icon">${seasonEmojis[data.season] || '🌤️'}</div>
+      <div class="season-content">
+        <div class="season-location">📍 ${location}</div>
+        <div class="season-name">${data.season} Season</div>
+        <div class="season-alert">${data.alert || ''}</div>
+      </div>
+    </div>
+    <div class="grid-2" style="margin-bottom:24px;">
+      ${(data.diseases || []).map(d => `
+        <div class="card card-lg">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+            <h3 style="font-family:var(--font-display);font-size:16px;font-weight:700;">${d.name}</h3>
+            <span class="badge badge-${d.risk === 'High' ? 'danger' : d.risk === 'Medium' ? 'warning' : 'safe'}">${d.risk} Risk</span>
+          </div>
+          <ul style="margin:0 0 12px 0;padding-left:16px;color:var(--text-secondary);font-size:13px;line-height:1.8;">${(d.symptoms || []).map(s => `<li>${s}</li>`).join('')}</ul>
+          <div style="background:rgba(26,122,74,0.08);border:1px solid rgba(26,122,74,0.2);border-radius:8px;padding:10px;font-size:12px;color:#4ade80;">
+            <strong>Prevention:</strong> ${d.prevention}
+          </div>
+        </div>`).join('')}
+    </div>
+    <div class="grid-2" style="margin-bottom:24px;">
+      <div>
+        <h3 style="font-family:var(--font-display);font-size:17px;font-weight:700;margin-bottom:12px;">✅ Do's This Season</h3>
+        ${(data.dos || []).map(d => `<div class="dos-card"><i class="fas fa-check" style="color:#4ade80;flex-shrink:0;margin-top:2px;"></i><span style="font-size:13px;">${d}</span></div>`).join('')}
+      </div>
+      <div>
+        <h3 style="font-family:var(--font-display);font-size:17px;font-weight:700;margin-bottom:12px;">❌ Don'ts This Season</h3>
+        ${(data.donts || []).map(d => `<div class="donts-card"><i class="fas fa-times" style="color:#f87171;flex-shrink:0;margin-top:2px;"></i><span style="font-size:13px;">${d}</span></div>`).join('')}
+      </div>
+    </div>
+    <div class="card card-lg">
+      <h3 style="font-family:var(--font-display);font-size:17px;font-weight:700;margin-bottom:16px;">🍽️ What to Eat This Season</h3>
+      <div class="grid-3">
+        ${(data.diet_tips || []).map((t, i) => `
+          <div style="background:rgba(26,122,74,0.06);border:1px solid rgba(26,122,74,0.15);border-radius:12px;padding:16px;font-size:13px;color:var(--text-secondary);line-height:1.6;">
+            <div style="font-size:24px;margin-bottom:8px;">${['🥗', '🍵', '🌿', '🍊'][i] || '🥦'}</div>${t}
+          </div>`).join('')}
+      </div>
+    </div>
+    <div style="margin-top:16px;padding:12px 18px;background:rgba(26,122,74,0.08);border:1px solid rgba(26,122,74,0.2);border-radius:10px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+      <p style="font-size:12px;color:var(--text-muted);">🤖 AI-generated seasonal health alerts based on your location. Last updated: ${new Date().toLocaleDateString('en-IN')}</p>
+      <button class="btn btn-secondary" style="font-size:12px;padding:6px 14px;" onclick="shareSeasonal()"><i class="fas fa-share-alt"></i> Share</button>
+    </div>`;
+    }
+
+    // ══════════════════════════════════════════════
+    // NEARBY HEALTHCARE
+    // ══════════════════════════════════════════════
+    let nearbyRadius = 1, nearbyFilter = 'all', nearbyData = [];
+    function detectNearby() {
+      showLoading('Detecting your location...');
+      if (!navigator.geolocation) { hideLoading(); loadNearbyData(20.2961, 85.8245); return; }
+      navigator.geolocation.getCurrentPosition(pos => {
+        hideLoading();
+        loadNearbyData(pos.coords.latitude, pos.coords.longitude);
+      }, () => { hideLoading(); loadNearbyData(20.2961, 85.8245); });
+    }
+    async function loadNearbyData(lat, lon) {
+      window.lastNearbyLat = lat;
+      window.lastNearbyLon = lon;
+
+      showLoading('Finding nearby healthcare...');
+      try {
+        // Always fetch with 10km (max) so we have all data cached
+        const res = await fetch(`${API}/api/nearby/find`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            latitude: lat,
+            longitude: lon,
+            type: 'all',
+            radius: 10       // Always fetch max radius
+          })
+        });
+
+        if (res.ok) {
+          const json = await res.json();
+          allNearbyData = json.places || [];
+        } else {
+          allNearbyData = getDemoNearbyData();
+        }
+      } catch {
+        allNearbyData = getDemoNearbyData();
+      }
+
+      hideLoading();
+
+      // Apply current radius filter on cached data
+      nearbyData = allNearbyData.filter(p => p.distance <= nearbyRadius);
+
+      document.getElementById('nearby-location').style.display = 'block';
+      document.getElementById('nearby-location').textContent =
+        `📍 Found ${nearbyData.length} locations within ${nearbyRadius} km`;
+
+      renderNearbyList();
+      renderNearbyMap(lat, lon);
+      showToast(`Found ${allNearbyData.length} total locations nearby`, 'success');
+    }
+    // Cache of ALL fetched data (max radius fetch)
+    let allNearbyData = [];
+
+    function getDemoNearbyData() {
+      return [
+        { name: 'AIIMS Bhubaneswar', type: 'hospital', address: 'Sijua, Patrapada, Bhubaneswar', distance: 1.2, rating: 4.5, open: true, lat: 20.2681, lon: 85.8154 },
+        { name: 'Apollo Clinic', type: 'clinic', address: 'Saheed Nagar, Bhubaneswar', distance: 0.8, rating: 4.3, open: true, lat: 20.2961, lon: 85.8402 },
+        { name: 'MedPlus Pharmacy', type: 'pharmacy', address: 'Nayapalli, Bhubaneswar', distance: 0.5, rating: 4.1, open: true, lat: 20.2891, lon: 85.8201 },
+        { name: 'Capital Hospital', type: 'hospital', address: 'Unit 6, Bhubaneswar', distance: 2.1, rating: 4.2, open: false, lat: 20.2701, lon: 85.8421 },
+        { name: 'LifeCare Clinic', type: 'clinic', address: 'Khandagiri, Bhubaneswar', distance: 1.5, rating: 4.0, open: true, lat: 20.2601, lon: 85.7901 },
+        { name: 'Jan Aushadhi Store', type: 'pharmacy', address: 'VSS Nagar, Bhubaneswar', distance: 0.9, rating: 4.4, open: true, lat: 20.3011, lon: 85.8351 },
+      ];
+    }
+    function filterNearby(type, btn) {
+      nearbyFilter = type;
+      document.querySelectorAll('.type-pill').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+
+      // Filter from ALL cached data using both radius AND type
+      nearbyData = allNearbyData.filter(p => {
+        const withinRadius = p.distance <= nearbyRadius;
+        const matchesType = type === 'all' ? true : p.type === type;
+        return withinRadius && matchesType;
+      });
+
+      renderNearbyList();
+      showToast(`Showing ${nearbyData.length} ${type === 'all' ? 'locations' : type + 's'}`, 'info');
+    }
+    function setRadius(km, btn) {
+      nearbyRadius = km;
+      document.querySelectorAll('.radius-pill').forEach(p => p.classList.remove('active'));
+      btn.classList.add('active');
+
+      if (!window.lastNearbyLat || !window.lastNearbyLon) {
+        showToast('Click "Detect My Location" first', 'warning');
+        return;
+      }
+
+      // Filter locally from cached data — NO new API call
+      const filtered = allNearbyData.filter(p => p.distance <= km);
+      nearbyData = filtered;
+
+      document.getElementById('nearby-location').textContent =
+        `📍 Found ${filtered.length} locations within ${km} km`;
+
+      renderNearbyList();
+
+      if (filtered.length === 0) {
+        showToast(`No locations within ${km} km. Try a larger radius.`, 'warning');
+      } else {
+        showToast(`Showing ${filtered.length} locations within ${km} km`, 'success');
+      }
+    }
+    // Render list from existing nearbyData with current filter applied
+    function renderNearbyList() {
+      // Apply type filter on existing data
+      const filtered = nearbyFilter === 'all'
+        ? nearbyData
+        : nearbyData.filter(p => p.type === nearbyFilter);
+
+      const typeColors = { hospital: 'danger', clinic: 'warning', pharmacy: 'safe' };
+      const typeEmojis = { hospital: '🏥', clinic: '🩺', pharmacy: '💊' };
+
+      if (!filtered.length) {
+        // Show helpful message based on why it's empty
+        const reason = nearbyData.length === 0
+          ? 'No healthcare locations found in this area. Try increasing the radius.'
+          : `No ${nearbyFilter}s found within ${nearbyRadius} km. Try "All" or increase radius.`;
+
+        document.getElementById('nearby-places').innerHTML = `
+      <div style="text-align:center;padding:32px;color:var(--text-muted);font-size:14px;">
+        <i class="fas fa-map-pin" style="font-size:28px;margin-bottom:12px;display:block;opacity:0.4;"></i>
+        <p style="font-weight:600;margin-bottom:6px;">No results</p>
+        <p style="font-size:12px;">${reason}</p>
+      </div>`;
+        return;
+      }
+
+      document.getElementById('nearby-places').innerHTML = filtered.map(p => `
+    <div class="place-card ${p.type}">
+      <div class="place-name">${typeEmojis[p.type] || '🏥'} ${p.name}</div>
+      <div class="place-address">${p.address}</div>
+      <div class="place-meta">
+        <span class="badge badge-info">${p.distance} km</span>
+        <span class="badge badge-${p.open ? 'safe' : 'danger'}">${p.open ? 'Open' : 'Closed'}</span>
+        <span style="font-size:12px;color:#fbbf24;">⭐ ${p.rating}</span>
+      </div>
+      <div style="display:flex;gap:6px;margin-top:10px;">
+        <button class="btn btn-secondary" style="padding:5px 10px;font-size:11px;flex:1;justify-content:center;"
+          onclick="showToast('Marker highlighted on map','info')">
+          <i class="fas fa-map-marker-alt"></i> View
+        </button>
+        <a class="btn btn-primary" style="padding:5px 10px;font-size:11px;flex:1;justify-content:center;text-decoration:none;"
+          href="https://www.openstreetmap.org/directions?to=${p.lat},${p.lon}"
+          target="_blank">
+          <i class="fas fa-directions"></i> Directions
+        </a>
+      </div>
+    </div>`).join('');
+    }
+    let leafletMap = null;
+    let leafletMarkers = [];
+
+    function renderNearbyMap(lat, lon) {
+      const mapPanel = document.getElementById('nearby-map-panel');
+      // Create the map div
+      mapPanel.innerHTML = `<div id="leaflet-map"></div>`;
+
+      // Small delay to let DOM render
+      setTimeout(() => {
+        // If map already exists, destroy it first
+        if (leafletMap) {
+          leafletMap.remove();
+          leafletMap = null;
+        }
+
+        // Initialize Leaflet map
+        leafletMap = L.map('leaflet-map').setView([lat, lon], 14);
+
+        // Free OpenStreetMap tiles — no API key needed!
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '© <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+          maxZoom: 19
+        }).addTo(leafletMap);
+
+        // User's current location — blue pulsing marker
+        const userIcon = L.divIcon({
+          className: '',
+          html: `<div style="
+        width:16px;height:16px;background:#3b82f6;border-radius:50%;
+        border:3px solid #fff;box-shadow:0 0 0 4px rgba(59,130,246,0.3);
+        animation:pulse-blue 1.5s infinite;">
+      </div>`,
+          iconSize: [16, 16],
+          iconAnchor: [8, 8]
+        });
+        L.marker([lat, lon], { icon: userIcon })
+          .addTo(leafletMap)
+          .bindPopup('<b>📍 Your Location</b>')
+          .openPopup();
+
+        // Place markers for nearby results
+        leafletMarkers = [];
+        const typeColors = { hospital: '#dc2626', clinic: '#d97706', pharmacy: '#16a34a' };
+        const typeEmojis = { hospital: '🏥', clinic: '🩺', pharmacy: '💊' };
+
+        nearbyData.forEach(place => {
+          if (!place.lat || !place.lon) return;
+          const color = typeColors[place.type] || '#1a7a4a';
+          const emoji = typeEmojis[place.type] || '🏥';
+
+          const placeIcon = L.divIcon({
+            className: '',
+            html: `<div style="
+          background:${color};color:#fff;
+          border-radius:50% 50% 50% 0;transform:rotate(-45deg);
+          width:32px;height:32px;display:flex;align-items:center;justify-content:center;
+          box-shadow:0 2px 8px rgba(0,0,0,0.4);border:2px solid #fff;">
+          <span style="transform:rotate(45deg);font-size:14px;">${emoji}</span>
+        </div>`,
+            iconSize: [32, 32],
+            iconAnchor: [16, 32],
+            popupAnchor: [0, -32]
+          });
+
+          const marker = L.marker([place.lat, place.lon], { icon: placeIcon })
+            .addTo(leafletMap)
+            .bindPopup(`
+          <div style="font-family:sans-serif;min-width:180px;">
+            <strong style="font-size:14px;">${emoji} ${place.name}</strong><br/>
+            <span style="font-size:12px;color:#666;">${place.address}</span><br/><br/>
+            <span style="font-size:12px;">📏 ${place.distance} km away</span><br/>
+            <span style="font-size:12px;">⭐ ${place.rating}</span>
+            <span style="font-size:12px;margin-left:8px;color:${place.open ? 'green' : 'red'};">
+              ${place.open ? '✅ Open' : '❌ Closed'}
+            </span><br/><br/>
+            <a href="https://www.openstreetmap.org/directions?to=${place.lat},${place.lon}"
+               target="_blank"
+               style="background:#1a7a4a;color:#fff;padding:5px 10px;border-radius:6px;font-size:12px;text-decoration:none;">
+              🗺️ Get Directions
+            </a>
+          </div>`);
+
+          leafletMarkers.push(marker);
+        });
+
+      }, 100);
+    }
+
+    function triggerEmergency() {
+      alert(
+        '🚨 MEDICAL EMERGENCY ALERT\n\n' +
+        '📞 Call 112 — National Emergency Helpline\n' +
+        '🏥 For MLC (Medico-Legal Case) & Ambulance\n\n' +
+        '📞 Call 108 — Free Ambulance Service\n' +
+        '📞 Call 102 — National Ambulance Service\n\n' +
+        '⚠️ Inform hospital: Patient needs immediate attention.\n' +
+        'Carry a valid ID proof for MLC registration.\n\n' +
+        'Stay calm. Help is on the way. ✅'
+      );
+    }
+
+    // ══════════════════════════════════════════════
+    // GLOBAL LANGUAGE SYSTEM
+    // ══════════════════════════════════════════════
+
+    // Language display names for UI
+    const LANG_NAMES = {
+      'English': 'English',
+      'Hindi': 'हिन्दी',
+      'Odia': 'ଓଡ଼ିଆ',
+      'Bengali': 'বাংলা',
+      'Tamil': 'தமிழ்',
+      'Telugu': 'తెలుగు',
+      'Marathi': 'ମରାଠୀ'
+    };
+
+    // Current global language (default English)
+    let globalLanguage = localStorage.getItem('medimitra_language') || 'English';
+
+    function setGlobalLanguage(lang) {
+      globalLanguage = lang;
+      localStorage.setItem('medimitra_language', lang);
+
+      // Sync prescription language dropdown
+      const rxLang = document.getElementById('rx-language');
+      if (rxLang) rxLang.value = lang;
+
+      // Show language indicator toast
+      const langName = LANG_NAMES[lang] || lang;
+      showToast(`🌐 Language set to ${langName} — AI responses will now be in ${langName}`, 'info');
+
+      // Update language badge on affected sections
+      updateLanguageBadges(lang);
+    }
+
+    function updateLanguageBadges(lang) {
+      const langName = LANG_NAMES[lang] || lang;
+      const affectedSections = ['symptom', 'prescription', 'lifestyle', 'seasonal'];
+
+      affectedSections.forEach(section => {
+        // Remove existing badge if any
+        const existing = document.getElementById(`lang-badge-${section}`);
+        if (existing) existing.remove();
+
+        if (lang === 'English') return; // No badge needed for English
+
+        // Find section header subtitle
+        const subtitle = document.querySelector(`#section-${section} .section-subtitle`);
+        if (subtitle) {
+          const badge = document.createElement('span');
+          badge.id = `lang-badge-${section}`;
+          badge.style.cssText = `
+        display:inline-flex;align-items:center;gap:4px;
+        background:rgba(26,122,74,0.15);border:1px solid rgba(26,122,74,0.3);
+        color:#4ade80;font-size:11px;font-weight:700;
+        padding:2px 10px;border-radius:20px;margin-left:10px;
+      `;
+          badge.innerHTML = `🌐 ${langName}`;
+          subtitle.appendChild(badge);
+        }
+      });
+    }
+
+    function getActiveLanguage() {
+      return globalLanguage;
+    }
+
+    function dismissSplash() {
+      const splash = document.getElementById('splash-screen');
+      if (splash) splash.classList.add('hidden');
+      // Re-trigger dashboard animations if needed
+      showToast('Welcome back to MediMitra!', 'success');
+    }
+
+    // Apply saved language on page load
+    function initLanguage() {
+      const saved = localStorage.getItem('medimitra_language') || 'English';
+      globalLanguage = saved;
+      const selector = document.getElementById('global-language');
+      if (selector) selector.value = saved;
+      const rxLang = document.getElementById('rx-language');
+      if (rxLang) rxLang.value = saved;
+      if (saved !== 'English') updateLanguageBadges(saved);
+    }
+
+    // ══════════════════════════════════════════════
+    // INIT
+    // ══════════════════════════════════════════════
+    function initApp() {
+      showSection('dashboard');
+      initLanguage();
+
+      // Enforce 4-column grid on desktop to avoid gaps
+      const grid = document.getElementById('grid-features');
+      if (grid) {
+        const resizeGrid = () => {
+          if (window.innerWidth > 1024) {
+            grid.style.gridTemplateColumns = 'repeat(4, 1fr)';
+          } else {
+            grid.style.gridTemplateColumns = 'repeat(auto-fill, minmax(220px, 1fr))';
+          }
+        };
+        window.addEventListener('resize', resizeGrid);
+        resizeGrid();
+      }
+
+      // Auto-detect season on seasonal section click
+      const seasonalBtn = document.querySelector('[data-section="seasonal"]');
+      if (seasonalBtn) {
+        seasonalBtn.addEventListener('click', () => {
+          setTimeout(() => {
+            const content = document.getElementById('seasonal-content');
+            if (content && content.querySelector('.card')) detectSeason();
+          }, 100);
+        });
+      }
+    }
+    // Also keep DOMContentLoaded listener as fallback
+    document.addEventListener('DOMContentLoaded', initApp);
+  </script>
+  <footer
+    style="background:var(--sidebar);border-top:1px solid var(--border);padding:16px 32px;text-align:center;font-size:12px;color:var(--text-muted);margin-left:240px;">
+    © 2026 MediMitra |&nbsp;|&nbsp; AI tool only — not a substitute for
+    professional medical advice.
+  </footer>
+</body>
+
+</html>
