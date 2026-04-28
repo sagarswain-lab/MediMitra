@@ -281,6 +281,7 @@ If **nothing shows up** for both — ports are free ✅ You can now safely run M
 
 ```
 cd medimitra-backend
+pip install -r requirements.txt
 python run_backend.py
 ```
 

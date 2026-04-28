@@ -30,7 +30,11 @@ def get_nearby_places(lat: float, lon: float, place_type: str, radius_km: int):
 
     try:
         print(f"Fetching nearby healthcare from Overpass for lat={lat}, lon={lon}, radius={radius_km}km")
-        res = requests.post(OVERPASS_URL, data={"data": query}, timeout=30)
+        headers = {
+            "User-Agent": "MediMitra/1.0 (HealthCare Finder Service)",
+            "Accept": "application/json"
+        }
+        res = requests.post(OVERPASS_URL, data={"data": query}, headers=headers, timeout=30)
         
         if res.status_code != 200:
             print(f"Overpass API error: Status {res.status_code}")

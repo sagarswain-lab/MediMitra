@@ -1,8 +1,8 @@
 __pycache__/
-*.pyc
+*.pyc 
 medimitra.db
 *.db
-.DS_Store
+.DS_Store 
 
 # Hide environment variables (API keys, secrets)
 .env
