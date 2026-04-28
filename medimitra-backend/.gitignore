@@ -7,3 +7,4 @@ medimitra.db
 # Hide environment variables (API keys, secrets)
 .env
 .env.*
+!.env.example
