@@ -5,7 +5,7 @@ import threading
 import os
 
 PORT = 5500
-FILE = "MediMitra_SPA.html"
+FILE = "index.html"
 
 os.chdir(os.path.dirname(os.path.abspath(__file__)))
 
