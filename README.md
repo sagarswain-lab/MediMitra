@@ -23,7 +23,10 @@ short_description: AI-Powered Health Intelligence Platform
 
 ### *Your AI Health Companion — Smarter Healthcare Decisions for Every Indian*
 
-**Built for Codecure AI Hackathon | SPIRIT 2026 | IIT (BHU) Varanasi**
+**Built for FutureAI Global Hackathon 2026**
+
+deployment link:
+
 
 <br/>
 
@@ -493,7 +496,7 @@ without any new API call
 | **Anup Kumar Sahoo** | Powerpoint Presentation Maker |
 
 **Institution:** [ITER — SOA]<br>
-**Event:** Codecure AI Hackathon — SPIRIT 2026, IIT (BHU) Varanasi
+**Event:** FutureAI Global Hackathon 2026
 
 ---
 
@@ -505,7 +508,7 @@ This project is licensed under the MIT License.
 
 <div align="center">
 
-**Built with ❤️ for Dev-Delight HACK**
+**Built with ❤️ for FutureAI Global Hackathon 2026**
 
 *MediMitra — Because every Indian deserves a health companion in their own language*
 
