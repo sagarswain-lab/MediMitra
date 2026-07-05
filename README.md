@@ -25,8 +25,13 @@ short_description: AI-Powered Health Intelligence Platform
 
 **Built for FutureAI Global Hackathon 2026**
 
-deployment link:
+## 🚀 Deployment Links
 
+| Service | URL |
+|---------|-----|
+| 🌐 **Live Demo** | [https://sagarswain-lab.github.io/MediMitra/medimitra-frontend/medimitra_spa.html](https://sagarswain-lab.github.io/MediMitra/medimitra-frontend/medimitra_spa.html) |
+| 🔗 **Backend API** | [https://medimitra-api-05bj.onrender.com/](https://medimitra-api-05bj.onrender.com/) |
+| 📖 **API Documentation** | [https://medimitra-api-05bj.onrender.com/docs](https://medimitra-api-05bj.onrender.com/docs) |
 
 <br/>
 
@@ -68,7 +73,7 @@ Most existing health apps target urban, English-speaking users — leaving 700 m
 
 ## 💡 Solution Overview
 
-**MediMitra** is a comprehensive AI-powered health companion web application that bridges the healthcare literacy gap for Indian users. It combines 7 intelligent features into one seamless platform — accessible in 7+ Indian languages, completely free to use.
+**MediMitra** is a comprehensive AI-powered health companion web application that bridges the healthcare literacy gap for Indian users. It combines 7 intelligent features into one seamless platform.
 
 > *"MediMitra" means "Health Friend" in Hindi/Odia — because everyone deserves a knowledgeable health companion.*
 
@@ -174,12 +179,12 @@ Most existing health apps target urban, English-speaking users — leaving 700 m
 │       │              │              │                   │
 │       └──────────────┴──────────────┘                   │
 │                      │                                  │
-│              fetch() to localhost:8001                  │
+│              fetch() to Render Backend                  │
 └──────────────────────┼──────────────────────────────────┘
                        │
 ┌──────────────────────▼──────────────────────────────────┐
 │                 FastAPI BACKEND                         │
-│                  (Port 8001)                            │
+│              (Deployed on Render)                       │
 │                                                         │
 │  ┌─────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐     │
 │  │symptom  │ │prescriptn│ │lifestyle │ │ nearby   │     │
@@ -210,7 +215,7 @@ Most existing health apps target urban, English-speaking users — leaving 700 m
 
 ### Step 1 — Clone the Repository
 ```bash
-git clone https://github.com/YOUR_USERNAME/MediMitra.git
+git clone https://github.com/sagarswain-lab/MediMitra.git
 cd MediMitra
 ```
 
@@ -306,7 +311,7 @@ python run_frontend.py
 
 You should see:
 ```
- MediMitra Frontend running at http://localhost:5500/MediMitra_SPA.html
+ MediMitra Frontend running at http://localhost:5500/index.html
  Opening browser automatically...
 ```
 
@@ -315,15 +320,15 @@ You should see:
 ### Access Points
 | Service | URL |
 |---|---|
-| 🌐 Web App | http://localhost:5500/MediMitra_SPA.html |
-| 📖 API Docs | http://localhost:8001/docs |
-| ❤️ Health Check | http://localhost:8001/health |
+| 🌐 Web App (Local) | http://localhost:5500/index.html |
+| 📖 API Docs (Local) | http://localhost:8001/docs |
+| ❤️ Health Check (Local) | http://localhost:8001/health |
 
 ---
 
 ## 📡 API Endpoints
 
-All endpoints are available at `http://localhost:8001`
+All endpoints are available at `http://localhost:8001` (local) or `https://medimitra-api-05bj.onrender.com/` (deployed)
 
 | Method | Endpoint | Feature | Description |
 |---|---|---|---|
@@ -395,7 +400,8 @@ MediMitra/
 │       └── 📄 schemas.py          # Pydantic request/response models
 │
 ├── 📁 medimitra-frontend/         # Frontend Web App
-│   ├── 📄 MediMitra_SPA.html      # Complete Single Page Application
+│   ├── 📄 index.html              # Entry point (redirects to medimitra_spa.html)
+│   ├── 📄 medimitra_spa.html      # Complete Single Page Application
 │   └── 📄 run_frontend.py         # Easy start script (auto-opens browser)
 │
 └── 📄 README.md                   # This file
@@ -481,7 +487,7 @@ without any new API call
 
 ## 🩺 Medical Disclaimer
 
-> MediMitra provides AI-generated health information for educational purposes only. It is **NOT** a substitute for professional medical advice, diagnosis, or treatment. Always consult a licensed doctor for medical decisions.
+> MediMitra provides AI-generated health information for educational purposes only. It is **NOT** a substitute for professional medical advice, diagnosis, or treatment. Always consult a licensed healthcare professional for medical concerns.
 
 ---
 
@@ -492,10 +498,10 @@ without any new API call
 |---|---|
 | **Sagar Swain** | Backend Developer |
 | **Aavash Kumar Beriha** | Frontend Developer |
-| **Om Rudra Prakash** |Supportive Backend Developer |
-| **Anup Kumar Sahoo** | Powerpoint Presentation Maker |
+| **Om Rudra Prakash** | Supportive Backend Developer |
+| **Anup Kumar Sahoo** | Presentation & Documentation |
 
-**Institution:** [ITER — SOA]<br>
+**Institution:** ITER — SOA<br>
 **Event:** FutureAI Global Hackathon 2026
 
 ---
