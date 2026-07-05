@@ -3,7 +3,6 @@ __pycache__/
 medimitra.db
 *.db
 .DS_Store 
-
 # Hide environment variables (API keys, secrets)
 .env
 .env.*
