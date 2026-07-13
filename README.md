@@ -502,7 +502,6 @@ without any new API call
 | **Anup Kumar Sahoo** | Presentation & Documentation |
 
 **Institution:** ITER — SOA<br>
-**Event:** FutureAI Global Hackathon 2026
 
 ---
 
@@ -514,7 +513,7 @@ This project is licensed under the MIT License.
 
 <div align="center">
 
-**Built with ❤️ for FutureAI Global Hackathon 2026**
+**Built with ❤️ by team SuperNova 2026**
 
 *MediMitra — Because every Indian deserves a health companion in their own language*
 
