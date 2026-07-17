@@ -224,5 +224,5 @@ def _parse_json(text: str) -> dict:
         return json.loads(text)
     except Exception as e:
         print(f"JSON parse error: {e}")
-        print(f"Raw response: {text}")
-        return {"error": "Invalid response format", "raw": text}
+        print(f"Raw response (first 500 chars): {text[:500]}")
+        raise Exception(f"AI returned invalid JSON. Raw: {text[:200]}")

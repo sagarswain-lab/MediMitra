@@ -47,7 +47,13 @@ JSON result:
         conn.commit()
         conn.close()
 
-        return LifestyleResponse(**result)
+        try:
+            return LifestyleResponse(**result)
+        except Exception as validation_err:
+            raise HTTPException(
+                status_code=500,
+                detail=f"AI response format error: {str(validation_err)}. Raw keys: {list(result.keys()) if isinstance(result, dict) else 'not a dict'}"
+            )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

@@ -12,17 +12,24 @@ from reportlab.pdfbase.ttfonts import TTFont
 font_name = 'Helvetica'
 font_bold_name = 'Helvetica-Bold'
 
-# Windows font file path for Nirmala UI which supports Devanagari, Bengali, Odia, Tamil, Telugu, Marathi
-font_path = "C:\\Windows\\Fonts\\Nirmala.ttc"
-if os.path.exists(font_path):
-    try:
-        pdfmetrics.registerFont(TTFont('Nirmala', font_path, subfontIndex=0))
-        pdfmetrics.registerFont(TTFont('Nirmala-Bold', font_path, subfontIndex=1))
-        font_name = 'Nirmala'
-        font_bold_name = 'Nirmala-Bold'
-        print("ReportLab: Registered Nirmala UI font successfully for Unicode support.")
-    except Exception as e:
-        print(f"ReportLab: Failed to register Nirmala UI font: {e}")
+# Try Windows font first, then Linux fallbacks
+font_paths = [
+    "C:\\Windows\\Fonts\\Nirmala.ttc",                         # Windows
+    "/usr/share/fonts/truetype/nirmala/Nirmala.ttf",          # Linux
+    "/usr/share/fonts/truetype/freefont/FreeSans.ttf",        # Linux fallback
+]
+for font_path in font_paths:
+    if os.path.exists(font_path):
+        try:
+            pdfmetrics.registerFont(TTFont('CustomFont', font_path))
+            pdfmetrics.registerFont(TTFont('CustomFont-Bold', font_path))
+            font_name = 'CustomFont'
+            font_bold_name = 'CustomFont'
+            print(f"ReportLab: Registered font from {font_path}")
+            break
+        except Exception as e:
+            print(f"ReportLab: Font load failed ({font_path}): {e}")
+            continue
 
 
 # ── Translation Dictionaries for PDF Reports ──

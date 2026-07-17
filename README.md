@@ -141,11 +141,10 @@ Most existing health apps target urban, English-speaking users — leaving 700 m
 ### Frontend
 | Technology | Purpose |
 |---|---|
-| HTML5 + CSS3 + Vanilla JS | Single Page Application (SPA) |
-| Leaflet.js + OpenStreetMap | Free interactive maps |
-| Tesseract.js | Browser-based OCR for prescriptions |
-| TensorFlow.js | Client-side medicine image analysis |
-| Web Speech API | Voice input & text-to-speech |
+| HTML5 + CSS3 + Vanilla JS | Single Page Application (SPA) — zero framework |
+| `app.js` + `style.css` | All SPA logic and design system |
+| Leaflet.js + OpenStreetMap | Free interactive maps (no API key) |
+| Web Speech API | Voice input & text-to-speech output |
 | Font Awesome | Icons |
 | Sora + DM Sans (Google Fonts) | Typography |
 
@@ -153,17 +152,21 @@ Most existing health apps target urban, English-speaking users — leaving 700 m
 | Technology | Purpose |
 |---|---|
 | FastAPI (Python) | REST API framework |
-| Groq Llama 3.3 70B & Llama 4 | AI/LLM for all intelligent features |
+| Groq Llama 3.3 70B | Text AI — symptoms, lifestyle, drug interaction |
+| Groq Llama 4 Scout (Vision) | Multimodal AI — prescription reader, medicine scanner |
+| ReportLab | PDF generation (symptom reports, 7-day plans) |
 | SQLite3 | Lightweight local database |
-| Pydantic | Request/response validation |
+| Pydantic v2 | Request/response validation with coercion validators |
+| Mem0 | Persistent AI memory for returning users |
 | Uvicorn | ASGI server |
 
 ### External APIs (All Free)
 | API | Purpose | Key Required |
 |---|---|---|
-| Groq API | AI responses (symptoms, prescriptions, lifestyle etc.) | ✅ Free key |
+| Groq API | All AI responses (text + vision) | ✅ Free key |
 | OpenFDA API | Drug verification & interaction data | ❌ No key |
 | Overpass API | Real nearby places (hospitals, clinics) | ❌ No key |
+| Mem0 API | Persistent user memory (optional) | ✅ Free key (optional) |
 
 ---
 
@@ -309,7 +312,7 @@ python run_frontend.py
 
 You should see:
 ```
- MediMitra Frontend running at http://localhost:5500/index.html
+ MediMitra Frontend running at http://localhost:5500/medimitra_spa.html
  Opening browser automatically...
 ```
 
@@ -318,7 +321,7 @@ You should see:
 ### Access Points
 | Service | URL |
 |---|---|
-| 🌐 Web App (Local) | http://localhost:5500/index.html |
+| 🌐 Web App (Local) | http://localhost:5500/medimitra_spa.html |
 | 📖 API Docs (Local) | http://localhost:8001/docs |
 | ❤️ Health Check (Local) | http://localhost:8001/health |
 
@@ -383,30 +386,36 @@ MediMitra/
 │   ├── 📄 database.py             # SQLite3 setup & initialization
 │   ├── 📄 requirements.txt        # Python dependencies
 │   ├── 📄 run_backend.py          # Easy start script
+│   ├── 📄 auth_utils.py           # JWT auth helpers
 │   ├── 📄 .env                    # API keys (Groq, Mem0, Google)
 │   ├── 📄 .gitignore              # Git ignore rules
 │   │
 │   ├── 📁 routes/                 # Feature route handlers
-│   │   ├── 📄 symptom.py          # Symptom checker endpoint
-│   │   ├── 📄 prescription.py     # Prescription reader endpoint
+│   │   ├── 📄 symptom.py          # Symptom checker + SSE stream + PDF download
+│   │   ├── 📄 prescription.py     # Prescription reader (vision AI)
 │   │   ├── 📄 interaction.py      # Drug interaction endpoint
-│   │   ├── 📄 scanner.py          # Medicine scanner endpoint
-│   │   ├── 📄 lifestyle.py        # Lifestyle advisor endpoint
+│   │   ├── 📄 scanner.py          # Medicine scanner (vision AI)
+│   │   ├── 📄 lifestyle.py        # Lifestyle advisor + PDF download
 │   │   ├── 📄 seasonal.py         # Seasonal awareness endpoint
 │   │   ├── 📄 nearby.py           # Nearby healthcare endpoint
+│   │   ├── 📄 auth.py             # Google OAuth + JWT endpoints
+│   │   ├── 📄 profile.py          # User health profile endpoints
 │   │   └── 📄 feedback.py         # User feedback endpoint
 │   │
-│   ├── 📁 services/               # External API integrations
-│   │   ├── 📄 llm_service.py      # AI service wrapper (Groq SDK)
+│   ├── 📁 services/               # Business logic & external integrations
+│   │   ├── 📄 llm_service.py      # Groq SDK wrapper (text + vision + streaming)
+│   │   ├── 📄 pdf_service.py      # ReportLab PDF generator (Indic Unicode support)
+│   │   ├── 📄 memory_service.py   # Mem0 persistent AI memory
 │   │   ├── 📄 openfda_service.py  # OpenFDA drug database
 │   │   └── 📄 overpass_service.py # Overpass/OpenStreetMap API
 │   │
 │   └── 📁 models/
-│       └── 📄 schemas.py          # Pydantic request/response models
+│       └── 📄 schemas.py          # Pydantic v2 models with coercion validators
 │
 ├── 📁 medimitra-frontend/         # Frontend Web App
-│   ├── 📄 index.html              # Entry point (redirects to medimitra_spa.html)
 │   ├── 📄 medimitra_spa.html      # Complete Single Page Application
+│   ├── 📄 app.js                  # All SPA logic, state, API calls, i18n
+│   ├── 📄 style.css               # Full design system & animations
 │   └── 📄 run_frontend.py         # Easy start script (auto-opens browser)
 │
 └── 📄 README.md                   # This file
@@ -481,15 +490,16 @@ without any new API call
 | **⚡ SSE Streaming** | Groq tokens stream live — first word visible in < 300 ms, no waiting |
 | **🧠 Persistent Memory** | Mem0 remembers past visits — AI personalises every new analysis |
 | **🔐 Google Auth** | One-click Google Sign-In, JWT sessions, health profile per user |
-| **📄 PDF Reports** | Branded ReportLab PDFs for symptom checks and 7-day lifestyle plans |
-| **Multilingual AI** | 7 Indian languages — Groq responds in user's language |
+| **📄 Multilingual PDFs** | ReportLab PDFs render Hindi/Bengali/Tamil/Telugu/Odia/Marathi natively via Unicode font (cross-platform: Windows + Linux/Render) |
+| **🌐 Full UI Translation** | Switching language instantly translates all nav, labels, buttons and card text — not just AI output |
+| **🔑 Groq Key Rotation** | Multiple GROQ API keys supported — auto-rotates on rate limit hit |
 | **Free Maps** | Leaflet + OpenStreetMap — zero cost, real data |
 | **Free Drug Data** | OpenFDA API — no key, real clinical data |
 | **Real Nearby Places** | Overpass API — actual OSM database, not fake data |
 | **Voice Input** | Web Speech API — works for symptoms + medicines |
 | **Offline History** | localStorage — history works without backend |
-| **SPA Architecture** | Single HTML file — zero framework, instant load |
-| **Smart Caching** | Nearby data cached once — filter changes instant |
+| **SPA Architecture** | Single HTML + JS + CSS — zero framework, instant load |
+| **Smart Caching** | Nearby data cached once — filter/radius changes are instant |
 
 ---
 

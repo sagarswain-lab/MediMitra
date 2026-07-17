@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 from typing import List, Optional
 
 # ── Symptom Checker ──
@@ -89,7 +89,20 @@ class DayMeals(BaseModel):
     lunch: str
     snack2: str
     dinner: str
-    total_calories: int
+    total_calories: int = 0
+
+    @field_validator('total_calories', mode='before')
+    @classmethod
+    def parse_calories(cls, v):
+        if isinstance(v, int):
+            return v
+        if isinstance(v, float):
+            return int(v)
+        if isinstance(v, str):
+            import re
+            nums = re.findall(r'\d+', v)
+            return int(nums[0]) if nums else 0
+        return 0
 
 class DayMorning(BaseModel):
     time: str
