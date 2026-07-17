@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from models.schemas import InteractionRequest, InteractionResponse
-from services.gemini_service import ask_gemini_json
+from services.llm_service import ask_gemini_json
 from services.openfda_service import check_drug_interaction
 from database import get_connection
 import json

@@ -1,0 +1,38 @@
+version: api.keploy.io/v1beta1
+kind: HTTP
+name: nearby-find-test
+spec:
+  metadata:
+    operation: POST
+    url: /api/nearby/find
+  request:
+    header:
+      Content-Type: application/json
+    method: POST
+    url: /api/nearby/find
+    body: |
+      {
+        "latitude": 20.2961,
+        "longitude": 85.8245,
+        "type": "hospital",
+        "radius": 2
+      }
+  response:
+    status_code: 200
+    header:
+      Content-Type: application/json
+    body: |
+      {
+        "places": [
+          {
+            "name": "Bhubaneswar City Hospital",
+            "type": "Hospital",
+            "address": "Bhubaneswar, Odisha",
+            "distance": 0.8,
+            "rating": 4.2,
+            "open": true,
+            "lat": 20.298,
+            "lon": 85.825
+          }
+        ]
+      }

@@ -1,0 +1,39 @@
+version: api.keploy.io/v1beta1
+kind: HTTP
+name: medicine-verify-test
+spec:
+  metadata:
+    operation: POST
+    url: /api/scanner/verify
+  request:
+    header:
+      Content-Type: application/json
+    method: POST
+    url: /api/scanner/verify
+    body: |
+      {
+        "image_base64": "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNkYAAAAAYAAjCB0C8AAAAASUVORK5CYII=",
+        "medicine_name": "Paracetamol",
+        "language": "English"
+      }
+  response:
+    status_code: 200
+    header:
+      Content-Type: application/json
+    body: |
+      {
+        "safety_score": 90,
+        "verdict": "Genuine",
+        "details": {
+          "drug_name": "Paracetamol 500mg",
+          "manufacturer": "GlaxoSmithKline",
+          "batch_number": "GSK-2026-X1",
+          "expiry": "Dec 2028",
+          "openfda_status": "Verified"
+        },
+        "actions": [
+          "Medicine is genuine and verified via OpenFDA. Safe to use as instructed.",
+          "Check packaging for storage requirements.",
+          "Consult your physician if symptoms persist."
+        ]
+      }

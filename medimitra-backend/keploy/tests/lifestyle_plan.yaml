@@ -1,0 +1,63 @@
+version: api.keploy.io/v1beta1
+kind: HTTP
+name: lifestyle-plan-test
+spec:
+  metadata:
+    operation: POST
+    url: /api/lifestyle/plan
+  request:
+    header:
+      Content-Type: application/json
+    method: POST
+    url: /api/lifestyle/plan
+    body: |
+      {
+        "age": 30,
+        "height": 175.0,
+        "weight": 70.0,
+        "conditions": ["None"],
+        "activity": "Sedentary",
+        "goal": "Stay Healthy",
+        "diet": "Vegetarian",
+        "language": "English"
+      }
+  response:
+    status_code: 200
+    header:
+      Content-Type: application/json
+    body: |
+      {
+        "bmi": 22.9,
+        "plan": [
+          {
+            "day": "Monday",
+            "morning": {
+              "time": "6:30 AM",
+              "drink": "Warm lemon water",
+              "activity": "10 minutes simple stretching"
+            },
+            "meals": {
+              "breakfast": "Oatmeal with almonds (350 kcal)",
+              "snack1": "Fruit bowl",
+              "lunch": "Rice, dal, and vegetable curry (500 kcal)",
+              "snack2": "Green tea",
+              "dinner": "Chapati with paneer and salad (450 kcal)",
+              "total_calories": 1800
+            },
+            "exercise": {
+              "type": "Cardio",
+              "duration": "30 minutes",
+              "intensity": "Moderate",
+              "routine": [
+                "Brisk walking for 20 minutes",
+                "Cool down stretches for 10 minutes"
+              ]
+            },
+            "wellness": {
+              "water": "2.5 Liters",
+              "sleep": "8 hours",
+              "tip": "Reduce screen time 1 hour before bed"
+            }
+          }
+        ]
+      }

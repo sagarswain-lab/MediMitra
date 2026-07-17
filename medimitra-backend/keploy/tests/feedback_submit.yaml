@@ -1,0 +1,26 @@
+version: api.keploy.io/v1beta1
+kind: HTTP
+name: feedback-submit-test
+spec:
+  metadata:
+    operation: POST
+    url: /api/feedback/submit
+  request:
+    header:
+      Content-Type: application/json
+    method: POST
+    url: /api/feedback/submit
+    body: |
+      {
+        "rating": 5,
+        "feedback_text": "Excellent AI health application!"
+      }
+  response:
+    status_code: 200
+    header:
+      Content-Type: application/json
+    body: |
+      {
+        "status": "success",
+        "message": "Feedback submitted successfully! Thank you for your review."
+      }

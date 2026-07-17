@@ -1,0 +1,17 @@
+# keploy.yml
+# Configuration for Keploy API testing
+
+version: api.keploy.io/v1beta2
+kind: Config
+spec:
+  record:
+    filters:
+      - path: /health
+        method: GET
+      - path: /docs
+        method: GET
+      - path: /openapi.json
+        method: GET
+  test:
+    delay: 500
+    apiTimeout: 10000

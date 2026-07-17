@@ -1,0 +1,34 @@
+version: api.keploy.io/v1beta1
+kind: HTTP
+name: drug-interaction-test
+spec:
+  metadata:
+    operation: POST
+    url: /api/interaction/check
+  request:
+    header:
+      Content-Type: application/json
+    method: POST
+    url: /api/interaction/check
+    body: |
+      {
+        "medicines": ["aspirin", "ibuprofen"],
+        "language": "English"
+      }
+  response:
+    status_code: 200
+    header:
+      Content-Type: application/json
+    body: |
+      {
+        "risk_level": "Moderate",
+        "interactions": [
+          {
+            "drug_a": "aspirin",
+            "drug_b": "ibuprofen",
+            "risk": "Moderate",
+            "explanation": "Taking aspirin and ibuprofen together can increase the risk of stomach irritation and gastrointestinal bleeding.",
+            "recommendation": "Consult your physician before taking both medicines concurrently. Consider alternative analgesics if necessary."
+          }
+        ]
+      }

@@ -1,0 +1,49 @@
+version: api.keploy.io/v1beta1
+kind: HTTP
+name: seasonal-alerts-test
+spec:
+  metadata:
+    operation: POST
+    url: /api/seasonal/alerts
+  request:
+    header:
+      Content-Type: application/json
+    method: POST
+    url: /api/seasonal/alerts
+    body: |
+      {
+        "latitude": 20.2961,
+        "longitude": 85.8245,
+        "month": 7,
+        "language": "English"
+      }
+  response:
+    status_code: 200
+    header:
+      Content-Type: application/json
+    body: |
+      {
+        "season": "Monsoon",
+        "alert": "High risk of mosquito-borne diseases",
+        "season_css": "monsoon",
+        "diseases": [
+          {
+            "name": "Dengue",
+            "risk": "High",
+            "symptoms": ["High fever", "Severe headache", "Joint pain"],
+            "prevention": "Use mosquito repellent and eliminate standing water."
+          }
+        ],
+        "dos": [
+          "Use mosquito net",
+          "Drink clean water"
+        ],
+        "donts": [
+          "Do not eat street food",
+          "Do not let water accumulate"
+        ],
+        "diet_tips": [
+          "Include turmeric in milk",
+          "Avoid leafy greens"
+        ]
+      }

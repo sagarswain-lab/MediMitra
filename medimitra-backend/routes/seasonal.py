@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from models.schemas import SeasonalRequest, SeasonalResponse
-from services.gemini_service import ask_gemini_json
+from services.llm_service import ask_gemini_json
 
 router = APIRouter()
 

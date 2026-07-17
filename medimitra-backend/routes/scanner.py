@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from models.schemas import ScannerRequest, ScannerResponse, ScannerDetails
-from services.gemini_service import ask_gemini_json
+from services.llm_service import ask_gemini_json
 from services.openfda_service import verify_medicine
 from database import get_connection
 import json

@@ -1,0 +1,41 @@
+version: api.keploy.io/v1beta1
+kind: HTTP
+name: symptom-check-fever
+spec:
+  metadata:
+    operation: POST
+    url: /api/symptom/check
+  request:
+    header:
+      Content-Type: application/json
+    method: POST
+    url: /api/symptom/check
+    body: |
+      {
+        "symptoms": "fever since 2 days, headache, body pain",
+        "duration": "1-3 days",
+        "severity": "6",
+        "language": "English"
+      }
+  response:
+    status_code: 200
+    header:
+      Content-Type: application/json
+    body: |
+      {
+        "condition": "Viral Fever",
+        "severity": "Moderate",
+        "confidence": 80,
+        "explanation": "This is a viral fever condition.",
+        "home_remedies": [
+          "Rest and stay hydrated",
+          "Take paracetamol for fever",
+          "Warm fluids like soup or kadha",
+          "Consult doctor if fever persists"
+        ],
+        "red_flags": [
+          "High fever above 103F for more than 3 days",
+          "Difficulty breathing",
+          "Severe chest pain or confusion"
+        ]
+      }

@@ -17,7 +17,7 @@ short_description: AI-Powered Health Intelligence Platform
 
 [![Python](https://img.shields.io/badge/Python-3.10+-3776AB?style=flat-square&logo=python&logoColor=white)](https://python.org)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.115-009688?style=flat-square&logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
-[![Gemini AI](https://img.shields.io/badge/Gemini-Flash%20Latest-4285F4?style=flat-square&logo=google&logoColor=white)](https://aistudio.google.com)
+[![Groq AI](https://img.shields.io/badge/Groq-Llama%203.3-orange?style=flat-square&logo=linux&logoColor=white)](https://console.groq.com)
 [![HTML5](https://img.shields.io/badge/HTML5-CSS3-E34F26?style=flat-square&logo=html5&logoColor=white)](https://developer.mozilla.org/en-US/docs/Web/HTML)
 [![License](https://img.shields.io/badge/License-MIT-green?style=flat-square)](LICENSE)
 
@@ -85,7 +85,9 @@ Most existing health apps target urban, English-speaking users — leaving 700 m
 - User describes symptoms via text or **voice input**
 - AI analyzes and identifies possible conditions with confidence score
 - Provides plain-language explanation, home remedies, and red flag warnings
+- **⚡ SSE Streaming** — tokens stream word-by-word in real time; users see results in < 300 ms
 - **Language-dependent** — responds in user's selected language
+- Results saved with **Mem0** persistent memory for personalized future visits
 
 ### 📄 2. Prescription Reader
 - Upload photo of handwritten or printed prescription
@@ -151,7 +153,7 @@ Most existing health apps target urban, English-speaking users — leaving 700 m
 | Technology | Purpose |
 |---|---|
 | FastAPI (Python) | REST API framework |
-| Google Gemini Flash Latest | AI/LLM for all intelligent features |
+| Groq Llama 3.3 70B & Llama 4 | AI/LLM for all intelligent features |
 | SQLite3 | Lightweight local database |
 | Pydantic | Request/response validation |
 | Uvicorn | ASGI server |
@@ -159,7 +161,7 @@ Most existing health apps target urban, English-speaking users — leaving 700 m
 ### External APIs (All Free)
 | API | Purpose | Key Required |
 |---|---|---|
-| Google Gemini API | AI responses (symptoms, prescriptions, lifestyle etc.) | ✅ Free key |
+| Groq API | AI responses (symptoms, prescriptions, lifestyle etc.) | ✅ Free key |
 | OpenFDA API | Drug verification & interaction data | ❌ No key |
 | Overpass API | Real nearby places (hospitals, clinics) | ❌ No key |
 
@@ -179,7 +181,7 @@ Most existing health apps target urban, English-speaking users — leaving 700 m
 │       │              │              │                   │
 │       └──────────────┴──────────────┘                   │
 │                      │                                  │
-│              fetch() to Render Backend                  │
+│  fetch() POST + ReadableStream SSE to Render Backend    │
 └──────────────────────┼──────────────────────────────────┘
                        │
 ┌──────────────────────▼──────────────────────────────────┐
@@ -192,8 +194,8 @@ Most existing health apps target urban, English-speaking users — leaving 700 m
 │  └────┬────┘ └─────┬────┘ └─────┬────┘ └─────┬────┘     │
 │       │             │             │           │         │
 │  ┌────▼─────────────▼─────────────▼─┐  ┌──────▼─────┐   │
-│  │      gemini_service.py           │  │overpass_   │   │
-│  │   (Google Gemini Flash Latest)      │service.py  │   │
+│  │      llm_service.py              │  │overpass_   │   │
+│  │   (Groq Llama 3.3 / Llama 4)       │service.py  │   │
 │  └──────────────────────────────────┘  └────────────┘   │
 │                                                         │
 │  ┌──────────────────┐  ┌───────────────────────────┐    │
@@ -226,16 +228,12 @@ pip install -r requirements.txt
 ```
 
 ### Step 3 — Environment Variables
-The `.env` file is already included in the repository with a working Gemini API key.
-
-> 📍 Location: `medimitra-backend/.env`
-
-If you want to use your own key, get a free one from:
-👉 **https://aistudio.google.com/app/apikey**
+Get a free Groq API key from:
+👉 **https://console.groq.com**
 
 Then update `.env`:
 ```env
-GEMINI_API_KEY=your_key_here
+GROQ_API_KEY=your_key_here
 ```
 
 ---
@@ -332,14 +330,21 @@ All endpoints are available at `http://localhost:8001` (local) or `https://medim
 
 | Method | Endpoint | Feature | Description |
 |---|---|---|---|
-| POST | `/api/symptom/check` | Symptom Checker | Analyze symptoms and return diagnosis |
+| POST | `/api/symptom/check` | Symptom Checker | Analyze symptoms, return full JSON diagnosis |
+| POST | `/api/symptom/stream` | Symptom Checker (SSE) | ⚡ Stream AI tokens live via Server-Sent Events |
+| POST | `/api/symptom/download-pdf` | Symptom Report | Download branded PDF of symptom analysis |
 | POST | `/api/prescription/read` | Prescription Reader | Extract and explain prescription medicines |
 | POST | `/api/interaction/check` | Drug Interaction | Check interactions between medicines |
 | POST | `/api/scanner/verify` | Medicine Scanner | Verify medicine authenticity |
 | POST | `/api/lifestyle/plan` | Lifestyle Advisor | Generate 7-day wellness plan |
+| POST | `/api/lifestyle/download-pdf` | Lifestyle Report | Download branded PDF of 7-day plan |
 | POST | `/api/seasonal/alerts` | Seasonal Awareness | Get seasonal health alerts by location |
 | POST | `/api/nearby/find` | Nearby Healthcare | Find hospitals/clinics/pharmacies nearby |
 | POST | `/api/feedback/submit` | User Feedback | Submit user rating and comments |
+| POST | `/api/auth/google` | Authentication | Verify Google OAuth token, return JWT |
+| GET | `/api/auth/config` | Auth Config | Return Google Client ID for frontend |
+| GET | `/api/profile/me` | User Profile | Get authenticated user's health profile |
+| PUT | `/api/profile/me` | User Profile | Update authenticated user's health profile |
 | GET | `/docs` | API Docs | Interactive Swagger documentation |
 | GET | `/health` | Health Check | Server status check |
 
@@ -378,7 +383,7 @@ MediMitra/
 │   ├── 📄 database.py             # SQLite3 setup & initialization
 │   ├── 📄 requirements.txt        # Python dependencies
 │   ├── 📄 run_backend.py          # Easy start script
-│   ├── 📄 .env                    # API keys (Gemini)
+│   ├── 📄 .env                    # API keys (Groq, Mem0, Google)
 │   ├── 📄 .gitignore              # Git ignore rules
 │   │
 │   ├── 📁 routes/                 # Feature route handlers
@@ -392,7 +397,7 @@ MediMitra/
 │   │   └── 📄 feedback.py         # User feedback endpoint
 │   │
 │   ├── 📁 services/               # External API integrations
-│   │   ├── 📄 gemini_service.py   # Google Gemini AI calls
+│   │   ├── 📄 llm_service.py      # AI service wrapper (Groq SDK)
 │   │   ├── 📄 openfda_service.py  # OpenFDA drug database
 │   │   └── 📄 overpass_service.py # Overpass/OpenStreetMap API
 │   │
@@ -411,28 +416,39 @@ MediMitra/
 
 ## 🔄 Technical Workflow
 
-### How Symptom Checker Works
+### How Symptom Checker Works (SSE Streaming)
 ```
 User types/speaks symptoms
         ↓
 Web Speech API captures voice (optional)
         ↓
-Frontend sends POST to /api/symptom/check
+Frontend sends POST to /api/symptom/stream
         ↓
 FastAPI validates request (Pydantic)
+Mem0 fetches relevant past visit memories
+Health profile context injected into prompt
         ↓
-Gemini Flash Latest analyzes symptoms
-with medical context prompt
+Groq Llama 3.3 (stream=True) starts generating
         ↓
-JSON response parsed and validated
+┌─────────────────────────────────────┐
+│  Tokens stream via SSE in real time │
+│  Frontend ReadableStream reader     │
+│  renders words live in result card  │
+│  < 300 ms to first visible token   │
+└─────────────────────────────────────┘
+        ↓
+[DONE] event fires → full JSON parsed
         ↓
 Result saved to SQLite3 database
+Summary saved to Mem0 memory store
         ↓
-Frontend renders result with
-condition, confidence bar, tabs
+Frontend renders styled result card
+(condition, confidence bar, tabs)
         ↓
-Result saved to localStorage history
+Result saved to session history
 ```
+
+> **Fallback**: if streaming fails, the frontend automatically retries with the non-streaming `/api/symptom/check` endpoint so the app never breaks.
 
 ### How Nearby Healthcare Works
 ```
@@ -462,7 +478,11 @@ without any new API call
 
 | Feature | Innovation |
 |---|---|
-| **Multilingual AI** | 7 Indian languages — Gemini responds in user's language |
+| **⚡ SSE Streaming** | Groq tokens stream live — first word visible in < 300 ms, no waiting |
+| **🧠 Persistent Memory** | Mem0 remembers past visits — AI personalises every new analysis |
+| **🔐 Google Auth** | One-click Google Sign-In, JWT sessions, health profile per user |
+| **📄 PDF Reports** | Branded ReportLab PDFs for symptom checks and 7-day lifestyle plans |
+| **Multilingual AI** | 7 Indian languages — Groq responds in user's language |
 | **Free Maps** | Leaflet + OpenStreetMap — zero cost, real data |
 | **Free Drug Data** | OpenFDA API — no key, real clinical data |
 | **Real Nearby Places** | Overpass API — actual OSM database, not fake data |
@@ -482,6 +502,37 @@ without any new API call
 | **Scalability** | FastAPI + SQLite easily upgrades to PostgreSQL; stateless routes |
 | **Innovation** | Multilingual AI + free APIs + voice input + real map data |
 | **Social Impact** | Targets rural India's health literacy gap in their own language |
+
+---
+
+## 🧪 Automated Testing with Keploy
+
+MediMitra includes automated API regression tests using **Keploy**. Keploy records and plays back HTTP request-response payloads to verify that backend modifications do not break existing endpoints.
+
+### How to Run Tests
+
+1. Make sure you have the Keploy CLI installed.
+2. Run the test suite:
+   ```bash
+   make test-api
+   ```
+   Or directly run Keploy:
+   ```bash
+   cd medimitra-backend
+   keploy test -c "python run_backend.py"
+   ```
+
+### How to Record New Test Cases
+
+If you introduce new endpoints or modify request schemas, you can record new test cases by following these steps:
+
+1. Start the backend in record mode:
+   ```bash
+   cd medimitra-backend
+   keploy record -c "python run_backend.py"
+   ```
+2. Interact with the application or send HTTP requests to the target endpoints (e.g., using Postman, curl, or the Swagger UI at `http://localhost:8001/docs`).
+3. Stop the backend server. Keploy will capture the API traffic and automatically generate new test cases under the `medimitra-backend/keploy/tests/` directory as YAML files.
 
 ---
 

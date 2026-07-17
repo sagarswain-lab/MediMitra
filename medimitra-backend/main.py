@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 from database import init_db
 
 
-from routes import symptom, prescription, interaction, scanner, lifestyle, seasonal, nearby, feedback
+from routes import symptom, prescription, interaction, scanner, lifestyle, seasonal, nearby, feedback, auth, profile
 
 
 load_dotenv()
@@ -33,6 +33,8 @@ app.include_router(lifestyle.router,    prefix="/api/lifestyle",     tags=["Life
 app.include_router(seasonal.router,     prefix="/api/seasonal",      tags=["Seasonal Awareness"])
 app.include_router(nearby.router,       prefix="/api/nearby",        tags=["Nearby Healthcare"])
 app.include_router(feedback.router,     prefix="/api/feedback",      tags=["User Feedback"])
+app.include_router(auth.router,         prefix="/api/auth",          tags=["Authentication"])
+app.include_router(profile.router,      prefix="/api/profile",       tags=["User Profile"])
 
 # ── Initialize database on startup ──
 @app.on_event("startup")

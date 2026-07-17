@@ -1,8 +1,10 @@
 from fastapi import APIRouter, HTTPException
-from models.schemas import LifestyleRequest, LifestyleResponse
-from services.gemini_service import ask_gemini_json
+from fastapi.responses import StreamingResponse
+from models.schemas import LifestyleRequest, LifestyleResponse, LifestylePdfRequest
+from services.llm_service import ask_gemini_json
 from database import get_connection
 import json
+import io
 
 router = APIRouter()
 
@@ -46,5 +48,21 @@ JSON result:
         conn.close()
 
         return LifestyleResponse(**result)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@router.post("/download-pdf")
+async def download_lifestyle_pdf(req: LifestylePdfRequest):
+    """
+    Generate and stream a personalized PDF for a 7-day lifestyle plan.
+    """
+    try:
+        from services.pdf_service import generate_lifestyle_pdf
+        pdf_bytes = generate_lifestyle_pdf(req.dict())
+        return StreamingResponse(
+            io.BytesIO(pdf_bytes),
+            media_type="application/pdf",
+            headers={"Content-Disposition": 'attachment; filename="lifestyle_plan.pdf"'}
+        )
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

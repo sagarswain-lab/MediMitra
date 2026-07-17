@@ -1,6 +1,6 @@
 from fastapi import APIRouter, HTTPException
 from models.schemas import PrescriptionRequest, PrescriptionResponse
-from services.gemini_service import ask_gemini_vision
+from services.llm_service import ask_gemini_vision
 from database import get_connection
 import json
 import base64

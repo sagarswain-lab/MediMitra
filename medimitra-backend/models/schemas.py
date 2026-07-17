@@ -7,6 +7,7 @@ class SymptomRequest(BaseModel):
     duration: str
     severity: str
     language: Optional[str] = "English"
+    user_id: Optional[str] = None          # optional — used for Mem0 memory lookup
 
 class SymptomResponse(BaseModel):
     condition: str
@@ -163,3 +164,56 @@ class NearbyResponse(BaseModel):
 class FeedbackRequest(BaseModel):
     rating: int
     feedback_text: Optional[str] = ""
+
+# ── Auth ──
+class GoogleAuthRequest(BaseModel):
+    id_token: str
+
+class AuthResponse(BaseModel):
+    jwt: str
+    user_id: int
+    email: Optional[str] = None
+    name: Optional[str] = None
+    picture: Optional[str] = None
+
+class UserProfile(BaseModel):
+    id: int
+    google_sub: str
+    email: Optional[str] = None
+    name: Optional[str] = None
+    picture: Optional[str] = None
+
+# ── Health Profile ──
+class HealthProfileRequest(BaseModel):
+    age: Optional[int] = None
+    blood_group: Optional[str] = None
+    allergies: Optional[List[str]] = []
+    chronic_conditions: Optional[List[str]] = []
+    current_medications: Optional[List[str]] = []
+    emergency_contact: Optional[str] = None
+
+class HealthProfileResponse(BaseModel):
+    id: int
+    user_id: int
+    age: Optional[int] = None
+    blood_group: Optional[str] = None
+    allergies: Optional[List[str]] = []
+    chronic_conditions: Optional[List[str]] = []
+    current_medications: Optional[List[str]] = []
+    emergency_contact: Optional[str] = None
+    updated_at: Optional[str] = None
+
+# ── PDF Download ──
+class SymptomPdfRequest(BaseModel):
+    condition: str
+    severity: str
+    confidence: int
+    explanation: str
+    home_remedies: List[str]
+    red_flags: List[str]
+    language: Optional[str] = "English"
+
+class LifestylePdfRequest(BaseModel):
+    bmi: float
+    plan: List[DayPlan]
+    language: Optional[str] = "English"
