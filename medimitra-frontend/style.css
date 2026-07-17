@@ -1385,6 +1385,40 @@
       .radio-card {
         min-width: 100%;
       }
+
+      #user-name {
+        display: none !important;
+      }
+    }
+
+    @media (max-width: 480px) {
+      .nav-brand {
+        display: none !important;
+      }
+
+      #navbar {
+        padding: 0 12px !important;
+      }
+
+      .nav-right {
+        gap: 6px !important;
+      }
+
+      .lang-select {
+        padding: 6px 8px !important;
+      }
+
+      .emergency-btn {
+        padding: 6px 10px !important;
+      }
+
+      .emergency-btn .emergency-label {
+        display: none !important;
+      }
+
+      .emergency-btn .emergency-mobile-label {
+        display: inline !important;
+      }
     }
 
     /* ── DASHBOARD BANNER ── */

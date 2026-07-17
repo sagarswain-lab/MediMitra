@@ -47,6 +47,9 @@ print(f" MediMitra Frontend running at http://localhost:{PORT}/{FILE}")
 print(" Opening browser automatically...")
 print("Press Ctrl+C to stop")
 
-with socketserver.TCPServer(("", PORT), http.server.SimpleHTTPRequestHandler) as httpd:
+class ReusableTCPServer(socketserver.TCPServer):
+    allow_reuse_address = True
+
+with ReusableTCPServer(("", PORT), http.server.SimpleHTTPRequestHandler) as httpd:
     httpd.serve_forever()
 

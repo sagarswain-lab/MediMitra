@@ -825,34 +825,41 @@ function showDayPlan(idx, btn) {
 function showDayPlanContent(idx) {
   const d = window.lsPlanData[idx];
   if (!d) return;
+
+  const t = (key, def) => {
+    const lang = getActiveLanguage();
+    if (lang === 'English') return def;
+    return UI_TRANSLATIONS[lang]?.[key] || def;
+  };
+
   document.getElementById('ls-day-content').innerHTML = `
     <div class="day-plan-grid">
       <div class="day-plan-card morning">
-        <div class="day-plan-title"><i class="fas fa-sun" style="color:#fbbf24;"></i>🌅 Morning Routine</div>
-        <div class="day-plan-item">⏰ Wake up: ${d.morning?.time || '6:30 AM'}</div>
-        <div class="day-plan-item">💧 Morning drink: ${d.morning?.drink || 'Warm lemon water'}</div>
-        <div class="day-plan-item">🧘 Activity: ${d.morning?.activity || 'Stretching'}</div>
+        <div class="day-plan-title"><i class="fas fa-sun" style="color:#fbbf24;"></i>${t('ls.morning_routine', '🌅 Morning Routine')}</div>
+        <div class="day-plan-item">⏰ ${t('ls.wake_time', 'Wake up:')} ${d.morning?.time || '6:30 AM'}</div>
+        <div class="day-plan-item">💧 ${t('ls.morning_drink', 'Morning drink:')} ${d.morning?.drink || 'Warm lemon water'}</div>
+        <div class="day-plan-item">🧘 ${t('ls.activity', 'Activity:')} ${d.morning?.activity || 'Stretching'}</div>
       </div>
       <div class="day-plan-card meal">
-        <div class="day-plan-title"><i class="fas fa-utensils" style="color:#4ade80;"></i>🍽️ Meal Plan</div>
-        <div class="day-plan-item">🌅 Breakfast: ${d.meals?.breakfast || 'Oatmeal'}</div>
-        <div class="day-plan-item">🍎 Snack: ${d.meals?.snack1 || 'Almonds'}</div>
-        <div class="day-plan-item">☀️ Lunch: ${d.meals?.lunch || 'Dal rice'}</div>
-        <div class="day-plan-item">🌆 Snack: ${d.meals?.snack2 || 'Fruit'}</div>
-        <div class="day-plan-item">🌙 Dinner: ${d.meals?.dinner || 'Soup chapati'}</div>
+        <div class="day-plan-title"><i class="fas fa-utensils" style="color:#4ade80;"></i>${t('ls.meal_plan', '🍽️ Meal Plan')}</div>
+        <div class="day-plan-item">🌅 ${t('ls.breakfast', 'Breakfast:')} ${d.meals?.breakfast || 'Oatmeal'}</div>
+        <div class="day-plan-item">🍎 ${t('ls.snack', 'Snack:')} ${d.meals?.snack1 || 'Almonds'}</div>
+        <div class="day-plan-item">☀️ ${t('ls.lunch', 'Lunch:')} ${d.meals?.lunch || 'Dal rice'}</div>
+        <div class="day-plan-item">🌆 ${t('ls.snack', 'Snack:')} ${d.meals?.snack2 || 'Fruit'}</div>
+        <div class="day-plan-item">🌙 ${t('ls.dinner', 'Dinner:')} ${d.meals?.dinner || 'Soup chapati'}</div>
         <div style="margin-top:8px;"><span class="badge badge-safe">~${d.meals?.total_calories || 1800} kcal</span></div>
       </div>
       <div class="day-plan-card exercise">
-        <div class="day-plan-title"><i class="fas fa-dumbbell" style="color:#2dd4bf;"></i>🏃 Exercise</div>
-        <div class="day-plan-item">Type: <strong>${d.exercise?.type || 'Cardio'}</strong></div>
-        <div class="day-plan-item">Duration: ${d.exercise?.duration || '45 min'}</div>
-        <div class="day-plan-item">Intensity: ${d.exercise?.intensity || 'Moderate'}</div>
+        <div class="day-plan-title"><i class="fas fa-dumbbell" style="color:#2dd4bf;"></i>${t('ls.exercise', '🏃 Exercise')}</div>
+        <div class="day-plan-item">${t('ls.type', 'Type:')} <strong>${d.exercise?.type || 'Cardio'}</strong></div>
+        <div class="day-plan-item">${t('ls.duration', 'Duration:')} ${d.exercise?.duration || '45 min'}</div>
+        <div class="day-plan-item">${t('ls.intensity', 'Intensity:')} ${d.exercise?.intensity || 'Moderate'}</div>
         ${(d.exercise?.routine || []).map((r, i) => `<div class="day-plan-item">${i + 1}. ${r}</div>`).join('')}
       </div>
       <div class="day-plan-card wellness">
-        <div class="day-plan-title"><i class="fas fa-droplet" style="color:#60a5fa;"></i>💧 Wellness</div>
-        <div class="day-plan-item">💧 Water: <strong>${d.wellness?.water || '2.5L'}</strong></div>
-        <div class="day-plan-item">😴 Sleep: <strong>${d.wellness?.sleep || '7-8 hours'}</strong></div>
+        <div class="day-plan-title"><i class="fas fa-droplet" style="color:#60a5fa;"></i>${t('ls.wellness', '💧 Wellness')}</div>
+        <div class="day-plan-item">💧 ${t('ls.water', 'Water:')} <strong>${d.wellness?.water || '2.5L'}</strong></div>
+        <div class="day-plan-item">😴 ${t('ls.sleep', 'Sleep:')} <strong>${d.wellness?.sleep || '7-8 hours'}</strong></div>
         <div style="margin-top:10px;padding:10px;background:rgba(96,165,250,0.1);border-radius:8px;font-size:12px;color:#93c5fd;line-height:1.6;">
           💡 ${d.wellness?.tip || 'Practice mindfulness for 5 minutes before bed.'}
         </div>
@@ -1420,7 +1427,8 @@ function downloadSymptomPdf() {
     showToast('No report data found.', 'warning');
     return;
   }
-  triggerBlobDownload(`${API}/api/symptom/download-pdf`, data, 'symptom_report.pdf');
+  const payload = { ...data, language: getActiveLanguage() };
+  triggerBlobDownload(`${API}/api/symptom/download-pdf`, payload, 'symptom_report.pdf');
 }
 
 function downloadLifestylePdf() {
@@ -1434,7 +1442,8 @@ function downloadLifestylePdf() {
     showToast('No plan data found.', 'warning');
     return;
   }
-  triggerBlobDownload(`${API}/api/lifestyle/download-pdf`, data, 'lifestyle_plan.pdf');
+  const payload = { ...data, language: getActiveLanguage() };
+  triggerBlobDownload(`${API}/api/lifestyle/download-pdf`, payload, 'lifestyle_plan.pdf');
 }
 
 // ══════════════════════════════════════════════
@@ -1458,6 +1467,22 @@ let globalLanguage = localStorage.getItem('medimitra_language') || 'English';
 // ── UI TRANSLATION DICTIONARY ─────────────────────────────────────────────
 const UI_TRANSLATIONS = {
   Hindi: {
+    'ls.morning_routine': '🌅 सुबह की दिनचर्या',
+    'ls.wake_time': 'उठने का समय:',
+    'ls.morning_drink': 'सुबह का पेय:',
+    'ls.activity': 'गतिविधि:',
+    'ls.meal_plan': '🍽️ आहार योजना',
+    'ls.breakfast': 'नाश्ता:',
+    'ls.snack': 'अल्पाहार:',
+    'ls.lunch': 'दोपहर का भोजन:',
+    'ls.dinner': 'रात का भोजन:',
+    'ls.exercise': '🏃 व्यायाम',
+    'ls.type': 'प्रकार:',
+    'ls.duration': 'अवधि:',
+    'ls.intensity': 'तीव्रता:',
+    'ls.wellness': '💧 कल्याण',
+    'ls.water': 'पानी:',
+    'ls.sleep': 'नींद:',
     'nav.diagnostic_suite': 'निदान सुविधा', 'nav.dashboard': 'डैशबोर्ड', 'nav.symptom': 'लक्षण जांचकर्ता',
     'nav.prescription': 'पर्चा पाठक', 'nav.drug': 'दवा परस्पर क्रिया', 'nav.health_care': 'स्वास्थ्य सेवा',
     'nav.scanner': 'दवा स्कैनर', 'nav.lifestyle': 'जीवनशैली सलाहकार', 'nav.seasonal': 'मौसमी जागरूकता',
@@ -1505,6 +1530,22 @@ const UI_TRANSLATIONS = {
     'footer.copy': '© 2026 MediMitra', 'footer.disclaimer': 'केवल AI उपकरण — पेशेवर चिकित्सा सलाह का विकल्प नहीं।',
   },
   Odia: {
+    'ls.morning_routine': '🌅 ସକାଳର ନିତ୍ୟକର୍ମ',
+    'ls.wake_time': 'ଉଠିବା ସମୟ:',
+    'ls.morning_drink': 'ପେୟ:',
+    'ls.activity': 'କାର୍ଯ୍ୟକଳାପ:',
+    'ls.meal_plan': '🍽️ ଭୋଜନ ଯୋଜନା',
+    'ls.breakfast': 'ଜଳଖିଆ:',
+    'ls.snack': 'ଜଳଖିଆ:',
+    'ls.lunch': 'ମଧ୍ୟାହ୍ନ ଭୋଜନ:',
+    'ls.dinner': 'ରାତ୍ରି ଭୋଜନ:',
+    'ls.exercise': '🏃 ବ୍ୟାୟାମ',
+    'ls.type': 'ପ୍ରକାର:',
+    'ls.duration': 'ଅବଧି:',
+    'ls.intensity': 'ତୀବ୍ରତା:',
+    'ls.wellness': '💧 ସ୍ୱାସ୍ଥ୍ୟ',
+    'ls.water': 'ପାଣି:',
+    'ls.sleep': 'ନିଦ୍ରା:',
     'nav.diagnostic_suite': 'ରୋଗ ନିଦାନ', 'nav.dashboard': 'ଡ୍ୟାଶବୋର୍ଡ', 'nav.symptom': 'ଲକ୍ଷଣ ପରୀକ୍ଷା',
     'nav.prescription': 'ପ୍ରେସ୍କ୍ରିପ୍ସନ ପଠକ', 'nav.drug': 'ଔଷଧ ପ୍ରତିକ୍ରିୟା', 'nav.health_care': 'ସ୍ୱାସ୍ଥ୍ୟ ସେବା',
     'nav.scanner': 'ଔଷଧ ସ୍କ୍ୟାନର', 'nav.lifestyle': 'ଜୀବନଶୈଳୀ ସଲାହ', 'nav.seasonal': 'ଋତୁ ସଚେତନତା',
@@ -1551,6 +1592,22 @@ const UI_TRANSLATIONS = {
     'footer.copy': '© 2026 MediMitra', 'footer.disclaimer': 'କେବଳ AI — ଚିକିତ୍ସା ପରାମର୍ଶ ବିକଳ୍ପ ନୁହେଁ।',
   },
   Bengali: {
+    'ls.morning_routine': '🌅 সকালের রুটিন',
+    'ls.wake_time': 'ঘুম থেকে ওঠার সময়:',
+    'ls.morning_drink': 'পানীয়:',
+    'ls.activity': 'ক্রিয়াকলাপ:',
+    'ls.meal_plan': '🍽️ খাবার পরিকল্পনা',
+    'ls.breakfast': 'প্রাতঃরাশ:',
+    'ls.snack': 'নাশতা:',
+    'ls.lunch': 'দুপুরের খাবার:',
+    'ls.dinner': 'রাতের খাবার:',
+    'ls.exercise': '🏃 ব্যায়াম',
+    'ls.type': 'ধরন:',
+    'ls.duration': 'সময়কাল:',
+    'ls.intensity': 'তীব্রতা:',
+    'ls.wellness': '💧 সুস্থতা',
+    'ls.water': 'জল:',
+    'ls.sleep': 'ঘুম:',
     'nav.diagnostic_suite': 'রোগ নির্ণয়', 'nav.dashboard': 'ড্যাশবোর্ড', 'nav.symptom': 'লক্ষণ পরীক্ষক',
     'nav.prescription': 'প্রেসক্রিপশন রিডার', 'nav.drug': 'ওষুধ প্রতিক্রিয়া', 'nav.health_care': 'স্বাস্থ্য সেবা',
     'nav.scanner': 'ওষুধ স্ক্যানার', 'nav.lifestyle': 'জীবনধারা পরামর্শ', 'nav.seasonal': 'মৌসুমী সচেতনতা',
@@ -1597,6 +1654,22 @@ const UI_TRANSLATIONS = {
     'footer.copy': '© 2026 MediMitra', 'footer.disclaimer': 'শুধুমাত্র AI — চিকিৎসা পরামর্শের বিকল্প নয়।',
   },
   Tamil: {
+    'ls.morning_routine': '🌅 காலை வழக்கம்',
+    'ls.wake_time': 'எழுந்திருக்கும் நேரம்:',
+    'ls.morning_drink': 'பானம்:',
+    'ls.activity': 'செயல்பாடு:',
+    'ls.meal_plan': '🍽️ உணவுத் திட்டம்',
+    'ls.breakfast': 'காலை உணவு:',
+    'ls.snack': 'சிற்றுண்டி:',
+    'ls.lunch': 'மதிய உணவு:',
+    'ls.dinner': 'இரவு உணவு:',
+    'ls.exercise': '🏃 உடற்பயிற்சி',
+    'ls.type': 'வகை:',
+    'ls.duration': 'நேரம்:',
+    'ls.intensity': 'தீவிரம்:',
+    'ls.wellness': '💧 நல்வாழ்வு',
+    'ls.water': 'நீர்:',
+    'ls.sleep': 'தூக்கம்:',
     'nav.diagnostic_suite': 'நோய் கண்டறிதல்', 'nav.dashboard': 'டாஷ்போர்டு', 'nav.symptom': 'அறிகுறி சோதனை',
     'nav.prescription': 'மருந்துச் சீட்டு வாசகர்', 'nav.drug': 'மருந்து தொடர்பு', 'nav.health_care': 'சுகாதார சேவை',
     'nav.scanner': 'மருந்து ஸ்கேனர்', 'nav.lifestyle': 'வாழ்க்கை முறை ஆலோசகர்', 'nav.seasonal': 'பருவகால விழிப்புணர்வு',
@@ -1643,6 +1716,22 @@ const UI_TRANSLATIONS = {
     'footer.copy': '© 2026 MediMitra', 'footer.disclaimer': 'AI கருவி மட்டுமே — மாற்று அல்ல.',
   },
   Telugu: {
+    'ls.morning_routine': '🌅 ఉదయపు దినచర్య',
+    'ls.wake_time': 'నిద్ర లేచే సమయం:',
+    'ls.morning_drink': 'పానీయం:',
+    'ls.activity': 'కార్యకలాపం:',
+    'ls.meal_plan': '🍽️ భోజన ప్రణాళిక',
+    'ls.breakfast': 'అల్పాహారం:',
+    'ls.snack': 'స్నాక్స్:',
+    'ls.lunch': 'మధ్యాహ్న భోజనం:',
+    'ls.dinner': 'రాత్రి భోజనం:',
+    'ls.exercise': '🏃 వ్యాయామం',
+    'ls.type': 'రకం:',
+    'ls.duration': 'వ్యవధి:',
+    'ls.intensity': 'తీव्रత:',
+    'ls.wellness': '💧 ఆరోగ్యం',
+    'ls.water': 'నీరు:',
+    'ls.sleep': 'నిద్ర:',
     'nav.diagnostic_suite': 'రోగ నిర్ణయం', 'nav.dashboard': 'డ్యాష్‌బోర్డ్', 'nav.symptom': 'లక్షణ పరీక్షకుడు',
     'nav.prescription': 'వైద్య చీటీ పఠకుడు', 'nav.drug': 'మందు పరస్పర చర్య', 'nav.health_care': 'ఆరోగ్య సేవ',
     'nav.scanner': 'మందు స్కానర్', 'nav.lifestyle': 'జీవనశైలి సలహాదారు', 'nav.seasonal': 'కాలానుగుణ అవగాహన',
@@ -1689,6 +1778,22 @@ const UI_TRANSLATIONS = {
     'footer.copy': '© 2026 MediMitra', 'footer.disclaimer': 'AI సాధనం మాత్రమే — ప్రత్యామ్నాయం కాదు.',
   },
   Marathi: {
+    'ls.morning_routine': '🌅 सकाळची दिनचर्या',
+    'ls.wake_time': 'उठण्याची वेळ:',
+    'ls.morning_drink': 'पेय:',
+    'ls.activity': 'कृती:',
+    'ls.meal_plan': '🍽️ भोजन योजना',
+    'ls.breakfast': 'नाश्ता:',
+    'ls.snack': 'अल्पाहार:',
+    'ls.lunch': 'दुपारचे जेवण:',
+    'ls.dinner': 'रात्रीचे जेवण:',
+    'ls.exercise': '🏃 व्यायाम',
+    'ls.type': 'प्रकार:',
+    'ls.duration': 'कालावधी:',
+    'ls.intensity': 'तीव्रता:',
+    'ls.wellness': '💧 कल्याण',
+    'ls.water': 'पाण्याचे सेवन:',
+    'ls.sleep': 'झोप:',
     'nav.diagnostic_suite': 'निदान सुविधा', 'nav.dashboard': 'डॅशबोर्ड', 'nav.symptom': 'लक्षण तपासणी',
     'nav.prescription': 'प्रिस्क्रिप्शन वाचक', 'nav.drug': 'औषध परस्परक्रिया', 'nav.health_care': 'आरोग्य सेवा',
     'nav.scanner': 'औषध स्कॅनर', 'nav.lifestyle': 'जीवनशैली सल्लागार', 'nav.seasonal': 'हंगामी जागरूकता',
