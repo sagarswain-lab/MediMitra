@@ -15,7 +15,22 @@ let userSession = {
 };
 
 function googleSignInTrigger() {
-  showToast('Please click the "Sign In with Google" button in the top-right corner of the navigation bar.', 'info');
+  // Try Google One Tap prompt first
+  try {
+    google.accounts.id.prompt((notification) => {
+      if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
+        // One Tap suppressed — try clicking the rendered button in profile section
+        const profileBtnIframe = document.querySelector('#google-signin-btn-profile iframe');
+        if (profileBtnIframe) { profileBtnIframe.click(); return; }
+        // Last resort — navigate to profile section so the sign-in button is visible
+        showSection('profile');
+        showToast('Please click "Sign In with Google" below', 'info');
+      }
+    });
+  } catch (e) {
+    showSection('profile');
+    showToast('Please click "Sign In with Google" below', 'info');
+  }
 }
 
 function showSection(id) {
@@ -32,6 +47,21 @@ function showSection(id) {
   const navBtn = document.querySelector(`[data-section="${id}"]`);
   if (navBtn) navBtn.classList.add('active');
   if (window.innerWidth < 1024) closeSidebar();
+
+  // Lifestyle auto-fill banner logic
+  if (id === 'lifestyle') {
+    const banner = document.getElementById('ls-autofill-banner');
+    const nudge = document.getElementById('ls-signin-nudge');
+    if (userSession.jwt) {
+      if (nudge) nudge.style.display = 'none';
+      if (banner) banner.style.display = 'flex';
+      // Auto-fill fields from profile when navigating to lifestyle section
+      autofillLifestyleFromProfile();
+    } else {
+      if (banner) banner.style.display = 'none';
+      if (nudge) nudge.style.display = 'block';
+    }
+  }
 }
 
 function toggleSidebar() {
@@ -250,10 +280,15 @@ async function checkSymptoms() {
   let streamBuffer = '';
   let streamSuccess = false;
 
+  // Build auth header once — used for both stream and fallback
+  const _symToken = userSession.jwt || localStorage.getItem('medimitra_jwt');
+  const _symHeaders = { 'Content-Type': 'application/json' };
+  if (_symToken) _symHeaders['Authorization'] = `Bearer ${_symToken}`;
+
   try {
     const response = await fetch(`${API}/api/symptom/stream`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: _symHeaders,
       body: JSON.stringify(payload)
     });
 
@@ -310,7 +345,7 @@ async function checkSymptoms() {
       showLoading('Analyzing symptoms…');
       const res = await fetch(`${API}/api/symptom/check`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: _symHeaders,
         body: JSON.stringify(payload)
       });
       if (!res.ok) throw new Error('API error');
@@ -382,9 +417,12 @@ async function readPrescription() {
   document.getElementById('rx-line-1').classList.add('done');
 
   // Start API request in parallel with animations for better speed
+  const _rxHeaders = { 'Content-Type': 'application/json' };
+  const _rxToken = userSession.jwt || localStorage.getItem('medimitra_jwt');
+  if (_rxToken) _rxHeaders['Authorization'] = `Bearer ${_rxToken}`;
   const apiPromise = fetch(`${API}/api/prescription/read`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: _rxHeaders,
     body: JSON.stringify({ image_base64: rxFileBase64, language: lang })
   }).then(res => res.ok ? res.json() : { medicines: [], explanation: 'Analyze failed. Please ensure the image is a clear prescription.' })
     .catch(() => ({ medicines: [], explanation: 'Network error. Please check your connection.' }));
@@ -451,6 +489,7 @@ function renderPrescriptionResult(data) {
       <div style="margin-top:10px;padding:10px;background:rgba(217,119,6,0.08);border-radius:8px;font-size:12px;color:#fbbf24;">
         ⚠️ <strong>Side effects to watch:</strong> ${m.side_effects || 'Nausea, allergic reactions, stomach upset. Consult doctor if severe.'}
       </div>
+      ${m.patient_warning ? `<div style="margin-top:8px;padding:10px;background:${m.patient_warning.startsWith('✅') ? 'rgba(22,163,74,0.08)' : 'rgba(220,38,38,0.08)'};border-radius:8px;font-size:12px;color:${m.patient_warning.startsWith('✅') ? '#4ade80' : '#f87171'};font-weight:600;">${m.patient_warning}</div>` : ''}
     </div>`).join('');
 }
 
@@ -589,7 +628,10 @@ async function checkInteractions() {
   if (selectedDrugs.length < 2) { showToast('Add at least 2 medicines', 'warning'); return; }
   showLoading('Checking drug interactions...');
   try {
-    const res = await fetch(`${API}/api/interaction/check`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ medicines: selectedDrugs, language: getActiveLanguage() }) });
+    const headers = { 'Content-Type': 'application/json' };
+    const token = userSession.jwt || localStorage.getItem('medimitra_jwt');
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    const res = await fetch(`${API}/api/interaction/check`, { method: 'POST', headers, body: JSON.stringify({ medicines: selectedDrugs, language: getActiveLanguage() }) });
     const data = res.ok ? await res.json() : getDemoInteractionData();
     renderInteractionResult(data);
     showToast('Interaction check complete!', 'success');
@@ -678,7 +720,10 @@ async function scanMedicine() {
   const medName = document.getElementById('scan-med-name').value;
   showLoading('Scanning medicine packaging...');
   try {
-    const res = await fetch(`${API}/api/scanner/verify`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ image_base64: scanFileBase64, medicine_name: medName, language: getActiveLanguage() }) });
+    const headers = { 'Content-Type': 'application/json' };
+    const token = userSession.jwt || localStorage.getItem('medimitra_jwt');
+    if (token) headers['Authorization'] = `Bearer ${token}`;
+    const res = await fetch(`${API}/api/scanner/verify`, { method: 'POST', headers, body: JSON.stringify({ image_base64: scanFileBase64, medicine_name: medName, language: getActiveLanguage() }) });
     const data = res.ok ? await res.json() : getDemoScanData();
     renderScanResult(data);
     saveHistory('scanner', { summary: medName || 'Medicine Scan', badge: data.verdict === 'Genuine' ? 'Genuine' : data.verdict === 'Suspicious' ? 'Suspicious' : 'Counterfeit', badgeType: data.verdict === 'Genuine' ? 'safe' : data.verdict === 'Suspicious' ? 'warning' : 'danger', fullData: data });
@@ -720,6 +765,16 @@ function renderScanResult(data) {
     ['OpenFDA Status', `<span class="badge badge-${d.openfda_status === 'Verified' ? 'safe' : 'danger'}">${d.openfda_status || 'Unknown'}</span>`]
   ].map((r, i) => `<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border);font-size:13px;"><span style="color:var(--text-muted);">${r[0]}</span><span style="font-weight:600;">${r[1]}</span></div>`).join('');
   document.getElementById('scan-actions').innerHTML = (data.actions || []).map((a, i) => `<div style="display:flex;align-items:flex-start;gap:10px;padding:10px 0;border-bottom:1px solid var(--border);font-size:13px;"><span style="background:var(--primary);color:#fff;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:11px;font-weight:700;">${i + 1}</span>${a}</div>`).join('');
+  // Suitability — personalised for logged-in users with a health profile
+  const suitEl = document.getElementById('scan-suitability');
+  if (suitEl && data.suitability) {
+    const isOk = data.suitability.startsWith('✅');
+    const isWarn = data.suitability.startsWith('⚠️');
+    const bg = isOk ? 'rgba(22,163,74,0.1)' : isWarn ? 'rgba(217,119,6,0.1)' : 'rgba(220,38,38,0.1)';
+    const border = isOk ? 'rgba(22,163,74,0.3)' : isWarn ? 'rgba(217,119,6,0.3)' : 'rgba(220,38,38,0.3)';
+    suitEl.style.cssText = `display:block;background:${bg};border:1px solid ${border};border-radius:10px;padding:12px 16px;margin-top:12px;font-size:13px;font-weight:600;`;
+    suitEl.textContent = data.suitability;
+  } else if (suitEl) { suitEl.style.display = 'none'; }
 }
 function startCamera(type) {
   const constraints = { video: { facingMode: 'environment' } };
@@ -787,7 +842,10 @@ async function generateLifestylePlan() {
   const diet = document.querySelector('[name="ls-diet"]:checked')?.value || 'Vegetarian';
   showLoading('Generating your personalized 7-day plan...');
   try {
-    const res = await fetch(`${API}/api/lifestyle/plan`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ age, height, weight, conditions, activity, goal, diet, language: getActiveLanguage() }) });
+    const _lsHeaders = { 'Content-Type': 'application/json' };
+    const _lsToken = userSession.jwt || localStorage.getItem('medimitra_jwt');
+    if (_lsToken) _lsHeaders['Authorization'] = `Bearer ${_lsToken}`;
+    const res = await fetch(`${API}/api/lifestyle/plan`, { method: 'POST', headers: _lsHeaders, body: JSON.stringify({ age, height, weight, conditions, activity, goal, diet, language: getActiveLanguage() }) });
     const data = res.ok ? await res.json() : getDemoLifestyleData(name, goal, diet);
     renderLifestylePlan(data, name, goal, activity);
     saveHistory('lifestyle', { summary: `${goal} plan for ${name}`, badge: '7-Day Plan', badgeType: 'safe', fullData: data, name, goal, activity });
@@ -886,7 +944,10 @@ async function loadSeasonalData(lat, lon) {
   const month = new Date().getMonth() + 1;
   showLoading('Loading seasonal health data...');
   try {
-    const res = await fetch(`${API}/api/seasonal/alerts`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ latitude: lat, longitude: lon, month, language: getActiveLanguage() }) });
+    const _seHeaders = { 'Content-Type': 'application/json' };
+    const _seToken = userSession.jwt || localStorage.getItem('medimitra_jwt');
+    if (_seToken) _seHeaders['Authorization'] = `Bearer ${_seToken}`;
+    const res = await fetch(`${API}/api/seasonal/alerts`, { method: 'POST', headers: _seHeaders, body: JSON.stringify({ latitude: lat, longitude: lon, month, language: getActiveLanguage() }) });
     const data = res.ok ? await res.json() : getDemoSeasonalData(month);
     renderSeasonalContent('Your Location', data);
   } catch {
@@ -1000,9 +1061,12 @@ async function loadNearbyData(lat, lon) {
   showLoading('Finding nearby healthcare...');
   try {
     // Always fetch with 10km (max) so we have all data cached
+    const _nbHeaders = { 'Content-Type': 'application/json' };
+    const _nbToken = userSession.jwt || localStorage.getItem('medimitra_jwt');
+    if (_nbToken) _nbHeaders['Authorization'] = `Bearer ${_nbToken}`;
     const res = await fetch(`${API}/api/nearby/find`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: _nbHeaders,
       body: JSON.stringify({
         latitude: lat,
         longitude: lon,
@@ -1224,21 +1288,147 @@ function renderNearbyMap(lat, lon) {
 }
 
 function triggerEmergency() {
-  alert(
-    '🚨 MEDICAL EMERGENCY ALERT\n\n' +
-    '📞 Call 112 — National Emergency Helpline\n' +
-    '🏥 For MLC (Medico-Legal Case) & Ambulance\n\n' +
-    '📞 Call 108 — Free Ambulance Service\n' +
-    '📞 Call 102 — National Ambulance Service\n\n' +
-    '⚠️ Inform hospital: Patient needs immediate attention.\n' +
-    'Carry a valid ID proof for MLC registration.\n\n' +
-    'Stay calm. Help is on the way. ✅'
+  // Step 1 — Show emergency dialog
+  const dialog = document.createElement('div');
+  dialog.style.cssText = `position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:99999;display:flex;align-items:center;justify-content:center;padding:20px;`;
+  dialog.innerHTML = `
+    <div style="background:#1a2332;border:2px solid #dc2626;border-radius:20px;padding:32px;max-width:400px;width:100%;text-align:center;">
+      <div style="font-size:48px;margin-bottom:16px;">🚨</div>
+      <h2 style="color:#f87171;font-size:22px;font-weight:800;margin-bottom:8px;">MEDICAL EMERGENCY</h2>
+      <p style="color:#94a3b8;font-size:14px;margin-bottom:24px;">What do you need right now?</p>
+      <button onclick="callEmergency('112')" style="width:100%;background:#dc2626;color:#fff;border:none;padding:16px;border-radius:12px;font-size:16px;font-weight:700;cursor:pointer;margin-bottom:10px;display:flex;align-items:center;justify-content:center;gap:10px;">📞 Call 112 — National Emergency</button>
+      <button onclick="callEmergency('108')" style="width:100%;background:#ea580c;color:#fff;border:none;padding:16px;border-radius:12px;font-size:16px;font-weight:700;cursor:pointer;margin-bottom:10px;display:flex;align-items:center;justify-content:center;gap:10px;">🚑 Call 108 — Free Ambulance</button>
+      <button onclick="navigateToNearestHospital()" style="width:100%;background:#1A7A4A;color:#fff;border:none;padding:16px;border-radius:12px;font-size:16px;font-weight:700;cursor:pointer;margin-bottom:10px;display:flex;align-items:center;justify-content:center;gap:10px;">🗺️ Navigate to Nearest Hospital</button>
+      <button onclick="this.closest('[style*=fixed]').remove()" style="width:100%;background:rgba(255,255,255,0.08);color:#94a3b8;border:1px solid rgba(255,255,255,0.1);padding:12px;border-radius:12px;font-size:14px;cursor:pointer;">Close</button>
+    </div>`;
+  document.body.appendChild(dialog);
+}
+
+function callEmergency(number) {
+  window.location.href = `tel:${number}`;
+}
+
+function navigateToNearestHospital() {
+  if (!navigator.geolocation) {
+    window.open('https://www.google.com/maps/search/hospital+near+me', '_blank');
+    return;
+  }
+  navigator.geolocation.getCurrentPosition(
+    (pos) => {
+      const lat = pos.coords.latitude;
+      const lon = pos.coords.longitude;
+      const url = `https://www.google.com/maps/dir/${lat},${lon}/hospital+near+me`;
+      window.open(url, '_blank');
+    },
+    () => {
+      window.open('https://www.google.com/maps/search/hospital+near+me', '_blank');
+    },
+    { timeout: 5000 }
   );
 }
 
 // ══════════════════════════════════════════════
 // AUTHENTICATION & PROFILE SYSTEM
 // ══════════════════════════════════════════════
+
+// ── Tag Input Helpers ──────────────────────────────────────────────────────
+function handleTagInput(event, tagsContainerId, inputId, hiddenId) {
+  const input = document.getElementById(inputId);
+  if (event.key === 'Enter' || event.key === ',') {
+    event.preventDefault();
+    const val = input.value.trim().replace(/,$/, '');
+    if (val) { _addTag(val, tagsContainerId, inputId, hiddenId); input.value = ''; }
+  } else if (event.key === 'Backspace' && input.value === '') {
+    const container = document.getElementById(tagsContainerId);
+    const chips = container.querySelectorAll('.tag-chip');
+    if (chips.length > 0) { chips[chips.length - 1].remove(); _syncHiddenTagInput(tagsContainerId, hiddenId); }
+  }
+}
+function addTagSuggestion(val, tagsContainerId, inputId, hiddenId) { _addTag(val, tagsContainerId, inputId, hiddenId); }
+function _addTag(val, tagsContainerId, inputId, hiddenId) {
+  if (!val || !val.trim()) return;
+  const container = document.getElementById(tagsContainerId);
+  if (!container) return;
+  const existing = Array.from(container.querySelectorAll('.tag-chip')).map(c => c.dataset.val.toLowerCase());
+  if (existing.includes(val.trim().toLowerCase())) return;
+  const chip = document.createElement('span');
+  chip.className = 'tag-chip'; chip.dataset.val = val.trim();
+  chip.innerHTML = `${val.trim()} <button class="tag-remove" onclick="_removeTag(this,'${tagsContainerId}','${hiddenId}')" type="button">×</button>`;
+  container.appendChild(chip);
+  _syncHiddenTagInput(tagsContainerId, hiddenId);
+}
+function _removeTag(btn, tagsContainerId, hiddenId) { btn.closest('.tag-chip').remove(); _syncHiddenTagInput(tagsContainerId, hiddenId); }
+function _syncHiddenTagInput(tagsContainerId, hiddenId) {
+  const container = document.getElementById(tagsContainerId);
+  const vals = Array.from(container.querySelectorAll('.tag-chip')).map(c => c.dataset.val);
+  const hidden = document.getElementById(hiddenId);
+  if (hidden) hidden.value = JSON.stringify(vals);
+  _showProfileUnsaved(true);
+}
+function _getTagValues(hiddenId) {
+  const hidden = document.getElementById(hiddenId);
+  if (!hidden || !hidden.value) return [];
+  try { return JSON.parse(hidden.value); } catch { return []; }
+}
+function _loadTagsFromArray(tagsContainerId, hiddenId, arr) {
+  const container = document.getElementById(tagsContainerId);
+  if (!container) return;
+  container.innerHTML = '';
+  (arr || []).forEach(val => _addTag(val, tagsContainerId, null, hiddenId));
+}
+function toggleCondChip(cb) {
+  if (cb.value === 'None' && cb.checked) {
+    document.querySelectorAll('.profile-cond-cb').forEach(o => { if (o.value !== 'None') o.checked = false; });
+  } else if (cb.value !== 'None' && cb.checked) {
+    const noneBox = document.querySelector('.profile-cond-cb[value="None"]');
+    if (noneBox) noneBox.checked = false;
+  }
+  _showProfileUnsaved(true);
+}
+function profileCalcBMI() {
+  const h = parseFloat(document.getElementById('profile-height').value);
+  const w = parseFloat(document.getElementById('profile-weight').value);
+  const disp = document.getElementById('profile-bmi-display');
+  if (!disp) return;
+  if (!h || !w) { disp.style.display = 'none'; return; }
+  const bmi = (w / ((h / 100) ** 2)).toFixed(1);
+  let cat = 'Normal', cls = 'normal';
+  if (bmi < 18.5) { cat = 'Underweight'; cls = 'underweight'; }
+  else if (bmi < 25) { cat = 'Normal'; cls = 'normal'; }
+  else if (bmi < 30) { cat = 'Overweight'; cls = 'overweight'; }
+  else { cat = 'Obese'; cls = 'obese'; }
+  disp.style.display = 'flex';
+  document.getElementById('profile-bmi-value').textContent = bmi;
+  const chip = document.getElementById('profile-bmi-chip');
+  chip.className = `bmi-chip bmi-${cls}`; chip.textContent = cat;
+  _showProfileUnsaved(true);
+}
+
+function _showProfileUnsaved(show) {
+  const notice = document.getElementById('profile-unsaved-notice');
+  if (notice) notice.style.display = show ? 'flex' : 'none';
+  const btn = document.getElementById('profile-save-btn');
+  if (btn) {
+    if (show) {
+      btn.style.animation = 'pulse-green 2s ease-in-out infinite';
+    } else {
+      btn.style.animation = '';
+    }
+  }
+}
+function _resetProfileForm() {
+  ['profile-full-name','profile-age','profile-height','profile-weight','profile-blood-group',
+   'profile-ec-name','profile-ec-phone','profile-emergency-contact'].forEach(id => {
+    const el = document.getElementById(id); if (el) el.value = '';
+  });
+  document.querySelectorAll('[name="profile-gender"]').forEach(r => r.checked = false);
+  document.querySelectorAll('.profile-cond-cb').forEach(cb => { cb.checked = false; });
+  const rel = document.getElementById('profile-ec-relation'); if (rel) rel.value = '';
+  ['allergy-tags','meds-tags','surgeries-tags'].forEach(id => { const el = document.getElementById(id); if (el) el.innerHTML = ''; });
+  ['profile-allergies-data','profile-medications-data','profile-surgeries-data'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+  const bmiDisp = document.getElementById('profile-bmi-display'); if (bmiDisp) bmiDisp.style.display = 'none';
+}
+
 async function initGoogleSignIn() {
   try {
     const res = await fetch(`${API}/api/auth/config`);
@@ -1252,15 +1442,28 @@ async function initGoogleSignIn() {
 
     google.accounts.id.initialize({
       client_id: config.google_client_id,
-      callback: handleCredentialResponse
+      callback: handleCredentialResponse,
+      ux_mode: 'popup',
+      auto_select: false,
+      cancel_on_tap_outside: true
     });
 
-    google.accounts.id.renderButton(
-      document.getElementById("google-signin-btn"),
-      { theme: "outline", size: "medium", shape: "pill" }
-    );
+    // Only render button inside the profile locked section (not navbar)
+    const profileBtn = document.getElementById("google-signin-btn-profile");
+    if (profileBtn) {
+      google.accounts.id.renderButton(
+        profileBtn,
+        { theme: "filled_green", size: "large", shape: "pill", text: "signin_with" }
+      );
+      // Hide the fallback once real SDK button is rendered
+      const fallback = document.getElementById("google-signin-fallback-btn");
+      if (fallback) fallback.style.display = 'none';
+    }
   } catch (e) {
     console.error('Google Sign-In initialization failed:', e);
+    // Show fallback button if SDK failed
+    const fallback = document.getElementById("google-signin-fallback-btn");
+    if (fallback) fallback.style.display = 'inline-flex';
   }
 }
 
@@ -1273,7 +1476,11 @@ async function handleCredentialResponse(response) {
       body: JSON.stringify({ id_token: response.credential })
     });
 
-    if (!res.ok) throw new Error('Backend auth failed');
+    if (!res.ok) {
+      let errDetail = `HTTP ${res.status}`;
+      try { const errBody = await res.json(); errDetail = errBody.detail || errDetail; } catch {}
+      throw new Error(errDetail);
+    }
 
     const data = await res.json();
     userSession.jwt = data.jwt;
@@ -1282,22 +1489,37 @@ async function handleCredentialResponse(response) {
     userSession.name = data.name;
     userSession.picture = data.picture;
 
-    // Update Nav UI
-    document.getElementById('google-signin-btn').style.display = 'none';
-    document.getElementById('user-profile-nav').style.display = 'flex';
-    document.getElementById('user-avatar').src = data.picture || 'https://www.gravatar.com/avatar/?d=mp';
-    document.getElementById('user-name').textContent = data.name || 'User';
+    // Persist JWT so it survives page refresh
+    localStorage.setItem('medimitra_jwt', data.jwt);
 
     // Update Health Profile Tab UI
     document.getElementById('profile-logged-out').style.display = 'none';
     document.getElementById('profile-logged-in').style.display = 'block';
 
+    // Show profile section avatar and sign-out button
+    const profileAvatar = document.getElementById('profile-section-avatar');
+    if (profileAvatar) {
+      profileAvatar.src = data.picture || 'https://www.gravatar.com/avatar/?d=mp';
+      profileAvatar.style.display = 'block';
+    }
+    const profileSignoutBtn = document.getElementById('profile-signout-btn');
+    if (profileSignoutBtn) profileSignoutBtn.style.display = 'block';
+
+    // Show Auto-fill button in Lifestyle Advisor
+    const lsAutofillBtn = document.getElementById('ls-autofill-btn');
+    if (lsAutofillBtn) lsAutofillBtn.style.display = 'inline-flex';
+
     showToast(`Welcome back, ${data.name}!`, 'success');
 
     await loadHealthProfile();
+
+    // If user is already on lifestyle section, auto-fill it now
+    if (location.hash === '#lifestyle') {
+      autofillLifestyleFromProfile();
+    }
   } catch (e) {
-    showToast('Authentication failed. Please try again.', 'error');
-    console.error(e);
+    showToast(`Authentication failed: ${e.message}`, 'error');
+    console.error('Auth error:', e);
   } finally {
     hideLoading();
   }
@@ -1305,20 +1527,24 @@ async function handleCredentialResponse(response) {
 
 function signOut() {
   userSession = { jwt: null, user_id: null, email: null, name: null, picture: null };
+  localStorage.removeItem('medimitra_jwt');
 
-  document.getElementById('google-signin-btn').style.display = 'block';
-  document.getElementById('user-profile-nav').style.display = 'none';
-
+  // Reset profile section
   document.getElementById('profile-logged-out').style.display = 'block';
   document.getElementById('profile-logged-in').style.display = 'none';
 
+  // Hide profile section avatar and sign-out button
+  const profileAvatar = document.getElementById('profile-section-avatar');
+  if (profileAvatar) profileAvatar.style.display = 'none';
+  const profileSignoutBtn = document.getElementById('profile-signout-btn');
+  if (profileSignoutBtn) profileSignoutBtn.style.display = 'none';
+
+  // Hide Auto-fill button in Lifestyle Advisor
+  const lsAutofillBtn = document.getElementById('ls-autofill-btn');
+  if (lsAutofillBtn) lsAutofillBtn.style.display = 'none';
+
   // Reset inputs
-  document.getElementById('profile-age').value = '';
-  document.getElementById('profile-blood-group').value = '';
-  document.getElementById('profile-allergies').value = '';
-  document.getElementById('profile-chronic-conditions').value = '';
-  document.getElementById('profile-current-medications').value = '';
-  document.getElementById('profile-emergency-contact').value = '';
+  _resetProfileForm();
 
   showToast('Signed out successfully.', 'info');
   showSection('dashboard');
@@ -1330,16 +1556,50 @@ async function loadHealthProfile() {
     const res = await fetch(`${API}/api/profile/me`, {
       headers: { 'Authorization': `Bearer ${userSession.jwt}` }
     });
-    if (res.status === 404) return;
+    if (res.status === 404) {
+      // No profile yet — show the unsaved notice to prompt user to fill & save
+      _showProfileUnsaved(true);
+      return;
+    }
     if (!res.ok) throw new Error('Failed to fetch profile');
     const data = await res.json();
 
+    document.getElementById('profile-full-name').value = data.full_name || '';
     document.getElementById('profile-age').value = data.age || '';
+    document.getElementById('profile-height').value = data.height_cm || '';
+    document.getElementById('profile-weight').value = data.weight_kg || '';
     document.getElementById('profile-blood-group').value = data.blood_group || '';
-    document.getElementById('profile-allergies').value = (data.allergies || []).join(', ');
-    document.getElementById('profile-chronic-conditions').value = (data.chronic_conditions || []).join(', ');
-    document.getElementById('profile-current-medications').value = (data.current_medications || []).join(', ');
-    document.getElementById('profile-emergency-contact').value = data.emergency_contact || '';
+
+    // Gender radio
+    if (data.gender) {
+      const map = { Male: 'profile-gender-m', Female: 'profile-gender-f', Other: 'profile-gender-o' };
+      const radioId = map[data.gender];
+      if (radioId) document.getElementById(radioId).checked = true;
+    }
+
+    // Emergency contact fields
+    document.getElementById('profile-ec-name').value = data.emergency_contact_name || '';
+    document.getElementById('profile-ec-phone').value = data.emergency_contact_phone || '';
+    const relSel = document.getElementById('profile-ec-relation');
+    if (relSel && data.emergency_contact_relation) relSel.value = data.emergency_contact_relation;
+    const legacyEc = document.getElementById('profile-emergency-contact');
+    if (legacyEc) legacyEc.value = data.emergency_contact || '';
+
+    // Tag inputs
+    _loadTagsFromArray('allergy-tags', 'profile-allergies-data', data.allergies || []);
+    _loadTagsFromArray('meds-tags', 'profile-medications-data', data.current_medications || []);
+    _loadTagsFromArray('surgeries-tags', 'profile-surgeries-data', data.past_surgeries || []);
+
+    // Chronic conditions checkboxes
+    const condList = (data.chronic_conditions || []).map(s => s.toLowerCase());
+    document.querySelectorAll('.profile-cond-cb').forEach(cb => {
+      const val = cb.value.toLowerCase();
+      const match = condList.some(c => c === val || c.includes(val) || val.includes(c));
+      cb.checked = match;
+    });
+
+    profileCalcBMI();
+    _showProfileUnsaved(false); // Profile loaded from server — no unsaved changes
   } catch (e) {
     showToast('Failed to load health profile.', 'error');
     console.error(e);
@@ -1347,42 +1607,223 @@ async function loadHealthProfile() {
 }
 
 async function saveHealthProfile() {
-  if (!userSession.jwt) {
-    showToast('Please sign in first.', 'warning');
-    return;
-  }
+  if (!userSession.jwt) { showToast('Please sign in first.', 'warning'); return; }
+  const full_name = document.getElementById('profile-full-name').value.trim();
   const ageVal = document.getElementById('profile-age').value;
   const age = ageVal ? parseInt(ageVal, 10) : null;
+  const gender = document.querySelector('[name="profile-gender"]:checked')?.value || '';
+  const heightVal = document.getElementById('profile-height').value;
+  const height_cm = heightVal ? parseFloat(heightVal) : null;
+  const weightVal = document.getElementById('profile-weight').value;
+  const weight_kg = weightVal ? parseFloat(weightVal) : null;
   const blood_group = document.getElementById('profile-blood-group').value;
-  const allergies = document.getElementById('profile-allergies').value.split(',').map(s => s.trim()).filter(s => s);
-  const chronic_conditions = document.getElementById('profile-chronic-conditions').value.split(',').map(s => s.trim()).filter(s => s);
-  const current_medications = document.getElementById('profile-current-medications').value.split(',').map(s => s.trim()).filter(s => s);
-  const emergency_contact = document.getElementById('profile-emergency-contact').value.trim();
-
+  const allergies = _getTagValues('profile-allergies-data');
+  const current_medications = _getTagValues('profile-medications-data');
+  const past_surgeries = _getTagValues('profile-surgeries-data');
+  const chronic_conditions = Array.from(document.querySelectorAll('.profile-cond-cb:checked'))
+    .map(cb => cb.value).filter(v => v !== 'None');
+  const emergency_contact_name = document.getElementById('profile-ec-name').value.trim();
+  const emergency_contact_phone = document.getElementById('profile-ec-phone').value.trim();
+  const emergency_contact_relation = document.getElementById('profile-ec-relation').value;
   showLoading('Saving health profile...');
   try {
     const res = await fetch(`${API}/api/profile/me`, {
       method: 'PUT',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${userSession.jwt}`
-      },
-      body: JSON.stringify({
-        age,
-        blood_group,
-        allergies,
-        chronic_conditions,
-        current_medications,
-        emergency_contact
-      })
+      headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${userSession.jwt}` },
+      body: JSON.stringify({ full_name, age, gender, height_cm, weight_kg, blood_group,
+        allergies, chronic_conditions, current_medications, past_surgeries,
+        emergency_contact_name, emergency_contact_phone, emergency_contact_relation })
     });
     if (!res.ok) throw new Error('Save failed');
-    showToast('Health profile saved successfully!', 'success');
+    showToast('Health profile saved! AI features will now be personalized for you ✅', 'success');
+    _showProfileUnsaved(false);
+    // Re-trigger lifestyle autofill if that section is active
+    if (location.hash === '#lifestyle') {
+      autofillLifestyleFromProfile();
+    }
   } catch (e) {
-    showToast('Failed to save health profile.', 'error');
-    console.error(e);
-  } finally {
+    showToast('Failed to save health profile.', 'error'); console.error(e);
+  } finally { hideLoading(); }
+}
+
+function clearHealthProfile() {
+  if (!confirm('Clear all profile data from the form?')) return;
+  _resetProfileForm();
+  showToast('Form cleared.', 'info');
+}
+
+async function shareHealthProfile() {
+  try {
+    const token = userSession.jwt || localStorage.getItem('medimitra_jwt');
+    if (!token) { showToast('Please sign in to share your health profile', 'warning'); return; }
+
+    showLoading('Generating Health Card PDF...');
+
+    // Step 1 — Download PDF from backend (uses pdf_service.py / reportlab)
+    const res = await fetch(`${API}/api/profile/health-card-pdf`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+
+    if (!res.ok) {
+      hideLoading();
+      if (res.status === 404) {
+        showToast('No profile found. Please fill and save your Health Profile first.', 'warning');
+      } else {
+        showToast('Failed to generate PDF. Please try again.', 'error');
+      }
+      return;
+    }
+
+    // Convert response to Blob
+    const pdfBlob = await res.blob();
     hideLoading();
+
+    const fileName = 'MediMitra_Health_Card.pdf';
+
+    // Step 2 — Try Web Share API with file (mobile / modern browsers)
+    if (navigator.canShare && navigator.canShare({ files: [new File([pdfBlob], fileName, { type: 'application/pdf' })] })) {
+      const file = new File([pdfBlob], fileName, { type: 'application/pdf' });
+      try {
+        await navigator.share({
+          title: 'MediMitra Health Card',
+          text: 'Here is my MediMitra personal health card. For emergencies call 112 or 108.',
+          files: [file]
+        });
+        showToast('Health card shared successfully!', 'success');
+        return;
+      } catch (shareErr) {
+        if (shareErr.name === 'AbortError') return; // user cancelled — that's fine
+        console.warn('File share failed, falling back to download:', shareErr);
+      }
+    }
+
+    // Step 3 — Fallback: trigger browser download + open share dialog if available
+    const url = URL.createObjectURL(pdfBlob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = fileName;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+
+    // Step 4 — After download, try text-based Web Share as secondary share option
+    setTimeout(async () => {
+      if (navigator.share) {
+        try {
+          await navigator.share({
+            title: 'MediMitra Health Card',
+            text: 'I\'ve shared my MediMitra personal health card PDF. For emergencies call 112 or 108.',
+            url: window.location.href
+          });
+        } catch (e) { /* ignore */ }
+      } else {
+        showToast('PDF downloaded! You can share it from your Downloads folder.', 'success');
+      }
+    }, 800);
+
+  } catch (err) {
+    hideLoading();
+    showToast('Failed to generate health card. ' + err.message, 'error');
+    console.error('[shareHealthProfile]', err);
+  }
+}
+
+function copyToClipboard(text) {
+  navigator.clipboard.writeText(text)
+    .then(() => {
+      showToast('Health card copied to clipboard!', 'success');
+    })
+    .catch(err => {
+      showToast('Could not copy to clipboard. Please copy manually.', 'error');
+      console.error(err);
+    });
+}
+
+async function autofillLifestyleFromProfile(showFeedback = false) {
+  if (!userSession.jwt) {
+    // Not signed in — show nudge, hide banner
+    const banner = document.getElementById('ls-autofill-banner');
+    const nudge = document.getElementById('ls-signin-nudge');
+    if (banner) banner.style.display = 'none';
+    if (nudge) nudge.style.display = 'block';
+    if (showFeedback) showToast('Please sign in first.', 'warning');
+    return;
+  }
+  try {
+    const res = await fetch(`${API}/api/profile/me`, {
+      headers: { 'Authorization': `Bearer ${userSession.jwt}` }
+    });
+
+    const banner = document.getElementById('ls-autofill-banner');
+    const nudge = document.getElementById('ls-signin-nudge');
+
+    if (!res.ok) {
+      // Signed in but no profile saved yet
+      if (banner) banner.style.display = 'flex';
+      if (nudge) nudge.style.display = 'none';
+      if (showFeedback) showToast('No profile saved yet. Go to Health Profile to set up your data.', 'warning');
+      return;
+    }
+
+    const p = await res.json();
+    if (banner) banner.style.display = 'flex';
+    if (nudge) nudge.style.display = 'none';
+
+    // Fill each field only if the value exists in the profile
+    const nameEl = document.getElementById('ls-name');
+    const ageEl  = document.getElementById('ls-age');
+    const hEl    = document.getElementById('ls-height');
+    const wEl    = document.getElementById('ls-weight');
+
+    if (nameEl && p.full_name) { nameEl.value = p.full_name; }
+    if (ageEl  && p.age)       { ageEl.value  = p.age; }
+    if (hEl    && p.height_cm) { hEl.value    = p.height_cm; }
+    if (wEl    && p.weight_kg) { wEl.value    = p.weight_kg; }
+
+    if (typeof calcBMI === 'function') calcBMI();
+
+    // Gender radio
+    if (p.gender) {
+      const radios = document.querySelectorAll('[name="ls-gender"]');
+      radios.forEach(r => { r.checked = (r.value === p.gender); });
+      radios.forEach(r => {
+        const card = r.closest('.radio-card');
+        if (card) card.classList.toggle('active', r.checked);
+      });
+    }
+
+    // Chronic conditions checkboxes
+    const cbs = document.querySelectorAll('#ls-conditions input[type="checkbox"]');
+    let matchedAny = false;
+    if (p.chronic_conditions && p.chronic_conditions.length > 0) {
+      const condList = p.chronic_conditions.map(s => s.trim().toLowerCase()).filter(Boolean);
+      cbs.forEach(cb => {
+        const val = cb.value.toLowerCase();
+        if (val === 'none') { cb.checked = false; }
+        else {
+          const match = condList.some(c => {
+            if (val === 'high bp' && (c.includes('bp') || c.includes('hypertension') || c.includes('blood pressure'))) return true;
+            return c.includes(val) || val.includes(c);
+          });
+          cb.checked = match;
+          if (match) matchedAny = true;
+        }
+        if (typeof toggleChip === 'function') toggleChip(cb);
+      });
+    }
+    if (!matchedAny) {
+      cbs.forEach(cb => {
+        cb.checked = (cb.value.toLowerCase() === 'none');
+        if (typeof toggleChip === 'function') toggleChip(cb);
+      });
+    }
+
+    if (showFeedback) showToast('Auto-filled from Health Profile ✅', 'success');
+
+  } catch (e) {
+    console.warn('[autofill] Could not auto-fill lifestyle from profile:', e);
+    if (showFeedback) showToast('Failed to auto-fill from profile.', 'error');
   }
 }
 
@@ -1976,11 +2417,72 @@ function initLanguage() {
 // ══════════════════════════════════════════════
 // INIT
 // ══════════════════════════════════════════════
+// SESSION RESTORE — runs on every page load
+// ══════════════════════════════════════════════
+async function restoreSession() {
+  const token = localStorage.getItem('medimitra_jwt');
+  if (!token) return;
+
+  try {
+    // Verify the token is still valid by calling /api/auth/me
+    const res = await fetch(`${API}/api/auth/me`, {
+      headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (!res.ok) {
+      // Token expired or invalid — clear it
+      localStorage.removeItem('medimitra_jwt');
+      return;
+    }
+
+    const user = await res.json();
+
+    // Restore session state
+    userSession.jwt      = token;
+    userSession.user_id  = user.id;
+    userSession.email    = user.email;
+    userSession.name     = user.name;
+    userSession.picture  = user.picture;
+
+    // Show profile form, hide locked state
+    document.getElementById('profile-logged-out').style.display = 'none';
+    document.getElementById('profile-logged-in').style.display = 'block';
+
+    // Show profile section avatar and sign-out button
+    const profileAvatar = document.getElementById('profile-section-avatar');
+    if (profileAvatar) {
+      profileAvatar.src = user.picture || 'https://www.gravatar.com/avatar/?d=mp';
+      profileAvatar.style.display = 'block';
+    }
+    const profileSignoutBtn = document.getElementById('profile-signout-btn');
+    if (profileSignoutBtn) profileSignoutBtn.style.display = 'block';
+
+    // Show Auto-fill button in Lifestyle Advisor
+    const lsAutofillBtn = document.getElementById('ls-autofill-btn');
+    if (lsAutofillBtn) lsAutofillBtn.style.display = 'inline-flex';
+
+    // Load health profile into form
+    await loadHealthProfile();
+
+    // If we landed on lifestyle, auto-fill it
+    const hash = location.hash.replace('#', '');
+    if (hash === 'lifestyle') {
+      autofillLifestyleFromProfile();
+    }
+
+    console.log(`[session] Restored session for ${user.name}`);
+  } catch (e) {
+    console.warn('[session] Could not restore session:', e.message);
+    localStorage.removeItem('medimitra_jwt');
+  }
+}
+
+// ══════════════════════════════════════════════
 function initApp() {
   const hash = location.hash.replace('#', '') || 'landing';
   showSection(hash);
   initLanguage();
   initGoogleSignIn();
+  restoreSession();   // ← restore JWT session from localStorage on every page load
 
   // Enforce 4-column grid on desktop to avoid gaps
   const grid = document.getElementById('grid-features');
@@ -2018,3 +2520,4 @@ function initApp() {
 // Also keep DOMContentLoaded listener as fallback
 document.addEventListener('DOMContentLoaded', initApp);
 
+;
