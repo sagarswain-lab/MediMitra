@@ -31,6 +31,7 @@ class MedicineDetail(BaseModel):
     what_it_is: Optional[str] = ""
     what_it_treats: Optional[str] = ""
     side_effects: Optional[str] = ""
+    patient_warning: Optional[str] = ""
 
 class PrescriptionResponse(BaseModel):
     medicines: List[MedicineDetail]
@@ -71,6 +72,7 @@ class ScannerResponse(BaseModel):
     verdict: str
     details: ScannerDetails
     actions: List[str]
+    suitability: Optional[str] = ""
 
 # ── Lifestyle Advisor ──
 class LifestyleRequest(BaseModel):
@@ -172,6 +174,7 @@ class PlaceResult(BaseModel):
 
 class NearbyResponse(BaseModel):
     places: List[PlaceResult]
+    emergency_contact: Optional[dict] = None
 
 # ── User Feedback ──
 class FeedbackRequest(BaseModel):
@@ -198,22 +201,39 @@ class UserProfile(BaseModel):
 
 # ── Health Profile ──
 class HealthProfileRequest(BaseModel):
+    full_name: Optional[str] = None
     age: Optional[int] = None
-    blood_group: Optional[str] = None
+    gender: Optional[str] = None                    # Male / Female / Other
+    blood_group: Optional[str] = None               # A+/A-/B+/B-/O+/O-/AB+/AB-
+    height_cm: Optional[float] = None
+    weight_kg: Optional[float] = None
     allergies: Optional[List[str]] = []
     chronic_conditions: Optional[List[str]] = []
     current_medications: Optional[List[str]] = []
+    past_surgeries: Optional[List[str]] = []
+    emergency_contact_name: Optional[str] = None
+    emergency_contact_phone: Optional[str] = None
+    emergency_contact_relation: Optional[str] = None
+    # Legacy field kept for backward compatibility
     emergency_contact: Optional[str] = None
 
 class HealthProfileResponse(BaseModel):
     id: int
     user_id: int
+    full_name: Optional[str] = None
     age: Optional[int] = None
+    gender: Optional[str] = None
     blood_group: Optional[str] = None
+    height_cm: Optional[float] = None
+    weight_kg: Optional[float] = None
     allergies: Optional[List[str]] = []
     chronic_conditions: Optional[List[str]] = []
     current_medications: Optional[List[str]] = []
-    emergency_contact: Optional[str] = None
+    past_surgeries: Optional[List[str]] = []
+    emergency_contact_name: Optional[str] = None
+    emergency_contact_phone: Optional[str] = None
+    emergency_contact_relation: Optional[str] = None
+    emergency_contact: Optional[str] = None         # Legacy field
     updated_at: Optional[str] = None
 
 # ── PDF Download ──
