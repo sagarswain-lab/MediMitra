@@ -629,3 +629,260 @@ def generate_lifestyle_pdf(data: dict) -> bytes:
     pdf_bytes = buffer.getvalue()
     buffer.close()
     return pdf_bytes
+
+
+def generate_health_card_pdf(profile: dict, picture_url: str = None) -> bytes:
+    """
+    Generate a branded, printable Health Card PDF from the user's health profile.
+    Used by POST /api/profile/health-card-pdf
+    Args:
+        profile: dict with user health data
+        picture_url: optional URL to user's profile picture (Google avatar)
+    """
+    buffer = io.BytesIO()
+    doc = SimpleDocTemplate(
+        buffer,
+        pagesize=letter,
+        rightMargin=54, leftMargin=54,
+        topMargin=54, bottomMargin=54
+    )
+
+    styles = getSampleStyleSheet()
+    primary    = colors.HexColor("#1A7A4A")
+    danger     = colors.HexColor("#DC2626")
+    amber      = colors.HexColor("#D97706")
+    slate      = colors.HexColor("#475569")
+    light_bg   = colors.HexColor("#F8FAFC")
+    border     = colors.HexColor("#E2E8F0")
+    green_bg   = colors.HexColor("#F0FDF4")
+    green_bdr  = colors.HexColor("#BBF7D0")
+    red_bg     = colors.HexColor("#FEF2F2")
+    red_bdr    = colors.HexColor("#FCA5A5")
+
+    def _para(text, size=10, color=None, bold=False, leading=14):
+        fn = font_bold_name if bold else font_name
+        cl = color or colors.HexColor("#1E293B")
+        return Paragraph(text, ParagraphStyle(
+            f's{size}', parent=styles['Normal'],
+            fontName=fn, fontSize=size, leading=leading,
+            textColor=cl, spaceAfter=3
+        ))
+
+    def _section_header(text):
+        tbl = Table([[_para(text, 11, colors.white, bold=True)]], colWidths=[504])
+        tbl.setStyle(TableStyle([
+            ('BACKGROUND', (0,0), (-1,-1), primary),
+            ('PADDING', (0,0), (-1,-1), 8),
+            ('ROUNDEDCORNERS', [4]),
+        ]))
+        return tbl
+
+    def _row(label, value, val_color=None):
+        return [
+            _para(label, 9.5, slate, bold=True),
+            _para(str(value) if value else "—", 9.5, val_color)
+        ]
+
+    def _badges(items, bg, fg):
+        if not items:
+            return _para("None", 9, slate)
+        chips = "  ".join(f"[{i}]" for i in items)
+        return _para(chips, 9, fg)
+
+    story = []
+
+    # ── Logo / Title with optional profile picture ──────────────
+    header_content = []
+    
+    # Try to fetch and embed profile picture if URL provided
+    profile_img = None
+    if picture_url:
+        try:
+            import requests
+            from reportlab.platypus import Image as RLImage
+            from PIL import Image as PILImage
+            resp = requests.get(picture_url, timeout=3)
+            if resp.status_code == 200:
+                img_buffer = io.BytesIO(resp.content)
+                # Convert to RGB if needed, resize
+                pil_img = PILImage.open(img_buffer)
+                if pil_img.mode != 'RGB':
+                    pil_img = pil_img.convert('RGB')
+                pil_img = pil_img.resize((60, 60), PILImage.Resampling.LANCZOS)
+                # Save back to buffer
+                img_out = io.BytesIO()
+                pil_img.save(img_out, format='JPEG')
+                img_out.seek(0)
+                profile_img = RLImage(img_out, width=60, height=60)
+        except Exception as e:
+            print(f"[PDF] Could not fetch profile picture: {e}")
+    
+    # Build header row with picture if available
+    if profile_img:
+        header_table_data = [
+            [profile_img, _para("🏥  MediMitra", 26, primary, bold=True, leading=30)]
+        ]
+        header_tbl = Table(header_table_data, colWidths=[70, 434])
+        header_tbl.setStyle(TableStyle([
+            ('VALIGN', (0,0), (-1,-1), 'MIDDLE'),
+            ('PADDING', (0,0), (-1,-1), 0),
+        ]))
+        story.append(header_tbl)
+    else:
+        story.append(_para("🏥  MediMitra", 26, primary, bold=True, leading=30))
+    
+    story.append(_para("Personal Health Card", 13, slate, leading=16))
+    story.append(_para(
+        f"<b>{profile.get('full_name', 'Patient')}</b>",
+        18, colors.HexColor("#1E293B"), bold=True, leading=22
+    ))
+    story.append(_para(
+        f"Generated on: {__import__('datetime').date.today().strftime('%d %B %Y')}",
+        9, slate
+    ))
+    story.append(Spacer(1, 8))
+
+    # Divider
+    div = Table([[""]], colWidths=[504])
+    div.setStyle(TableStyle([
+        ('LINEABOVE', (0,0), (-1,-1), 2, primary),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 0),
+        ('TOPPADDING', (0,0), (-1,-1), 0),
+    ]))
+    story.append(div)
+    story.append(Spacer(1, 12))
+
+    # ── SECTION A: Personal Info ──────────────────────────────────
+    story.append(_section_header("👤  Personal Information"))
+    story.append(Spacer(1, 6))
+
+    # BMI calculation
+    bmi_str = "—"
+    try:
+        h = float(profile.get("height_cm") or 0)
+        w = float(profile.get("weight_kg") or 0)
+        if h > 0 and w > 0:
+            bmi_val = round(w / ((h / 100) ** 2), 1)
+            cat = ("Underweight" if bmi_val < 18.5 else
+                   "Normal"      if bmi_val < 25   else
+                   "Overweight"  if bmi_val < 30   else "Obese")
+            bmi_str = f"{bmi_val} ({cat})"
+    except Exception:
+        pass
+
+    personal_data = [
+        _row("Age",          f"{profile.get('age', '—')} years"),
+        _row("Gender",       profile.get("gender", "—")),
+        _row("Blood Group",  profile.get("blood_group", "—"), danger),
+        _row("Height",       f"{profile.get('height_cm', '—')} cm"),
+        _row("Weight",       f"{profile.get('weight_kg', '—')} kg"),
+        _row("BMI",          bmi_str),
+    ]
+    personal_tbl = Table(personal_data, colWidths=[160, 344])
+    personal_tbl.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,-1), light_bg),
+        ('GRID',       (0,0), (-1,-1), 0.4, border),
+        ('PADDING',    (0,0), (-1,-1), 7),
+        ('VALIGN',     (0,0), (-1,-1), 'MIDDLE'),
+        ('ROWBACKGROUNDS', (0,0), (-1,-1), [light_bg, colors.white]),
+    ]))
+    story.append(personal_tbl)
+    story.append(Spacer(1, 14))
+
+    # ── SECTION B: Allergies ──────────────────────────────────────
+    story.append(_section_header("⚠️  Allergies"))
+    story.append(Spacer(1, 6))
+    allergies = profile.get("allergies") or []
+    allergy_tbl = Table([[_badges(allergies, red_bg, danger)]], colWidths=[504])
+    allergy_tbl.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,-1), red_bg),
+        ('BOX',        (0,0), (-1,-1), 0.5, red_bdr),
+        ('PADDING',    (0,0), (-1,-1), 10),
+    ]))
+    story.append(allergy_tbl)
+    story.append(Spacer(1, 14))
+
+    # ── SECTION C: Chronic Conditions ────────────────────────────
+    story.append(_section_header("🩺  Chronic Conditions"))
+    story.append(Spacer(1, 6))
+    conditions = profile.get("chronic_conditions") or []
+    cond_tbl = Table([[_badges(conditions, green_bg, primary)]], colWidths=[504])
+    cond_tbl.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,-1), green_bg),
+        ('BOX',        (0,0), (-1,-1), 0.5, green_bdr),
+        ('PADDING',    (0,0), (-1,-1), 10),
+    ]))
+    story.append(cond_tbl)
+    story.append(Spacer(1, 14))
+
+    # ── SECTION D: Medications ────────────────────────────────────
+    story.append(_section_header("💊  Current Medications"))
+    story.append(Spacer(1, 6))
+    meds = profile.get("current_medications") or []
+    if meds:
+        med_rows = [[_para(f"{i+1}.", 9.5, slate, bold=True), _para(m, 9.5)] for i, m in enumerate(meds)]
+        med_tbl = Table(med_rows, colWidths=[30, 474])
+        med_tbl.setStyle(TableStyle([
+            ('BACKGROUND', (0,0), (-1,-1), light_bg),
+            ('GRID',       (0,0), (-1,-1), 0.4, border),
+            ('PADDING',    (0,0), (-1,-1), 6),
+        ]))
+        story.append(med_tbl)
+    else:
+        story.append(_para("No current medications recorded.", 9.5, slate))
+    story.append(Spacer(1, 14))
+
+    # ── SECTION E: Past Surgeries ────────────────────────────────
+    surgeries = profile.get("past_surgeries") or []
+    if surgeries:
+        story.append(_section_header("🔪  Past Surgeries"))
+        story.append(Spacer(1, 6))
+        surg_rows = [[_para(f"•  {s}", 9.5)] for s in surgeries]
+        surg_tbl = Table(surg_rows, colWidths=[504])
+        surg_tbl.setStyle(TableStyle([
+            ('BACKGROUND', (0,0), (-1,-1), light_bg),
+            ('GRID',       (0,0), (-1,-1), 0.4, border),
+            ('PADDING',    (0,0), (-1,-1), 6),
+        ]))
+        story.append(surg_tbl)
+        story.append(Spacer(1, 14))
+
+    # ── SECTION F: Emergency Contact ─────────────────────────────
+    story.append(_section_header("🆘  Emergency Contact"))
+    story.append(Spacer(1, 6))
+    ec_name     = profile.get("emergency_contact_name", "—")
+    ec_relation = profile.get("emergency_contact_relation", "—")
+    ec_phone    = profile.get("emergency_contact_phone", "—")
+    ec_data = [
+        _row("Name",         ec_name),
+        _row("Relationship", ec_relation),
+        _row("Phone",        ec_phone, danger),
+    ]
+    ec_tbl = Table(ec_data, colWidths=[160, 344])
+    ec_tbl.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,-1), red_bg),
+        ('BOX',        (0,0), (-1,-1), 1.5, danger),
+        ('GRID',       (0,0), (-1,-1), 0.4, red_bdr),
+        ('PADDING',    (0,0), (-1,-1), 8),
+    ]))
+    story.append(ec_tbl)
+    story.append(Spacer(1, 20))
+
+    # ── Disclaimer ────────────────────────────────────────────────
+    disclaimer = Table([[_para(
+        "This health card is generated by <b>MediMitra AI Health Platform</b>. "
+        "For emergencies call <b>112</b> (National) or <b>108</b> (Free Ambulance). "
+        "MediMitra is an AI tool only — not a substitute for professional medical advice.",
+        8, slate
+    )]], colWidths=[504])
+    disclaimer.setStyle(TableStyle([
+        ('BACKGROUND', (0,0), (-1,-1), light_bg),
+        ('BOX',        (0,0), (-1,-1), 0.5, border),
+        ('PADDING',    (0,0), (-1,-1), 10),
+    ]))
+    story.append(disclaimer)
+
+    doc.build(story)
+    pdf_bytes = buffer.getvalue()
+    buffer.close()
+    return pdf_bytes
