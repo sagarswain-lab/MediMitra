@@ -91,15 +91,38 @@ def init_db():
         CREATE TABLE IF NOT EXISTS health_profiles (
             id INTEGER PRIMARY KEY AUTOINCREMENT,
             user_id INTEGER NOT NULL REFERENCES users(id),
+            full_name TEXT,
             age INTEGER,
+            gender TEXT,
             blood_group TEXT,
-            allergies TEXT,        -- JSON array as text
-            chronic_conditions TEXT, -- JSON array as text
-            current_medications TEXT, -- JSON array as text
+            height_cm REAL,
+            weight_kg REAL,
+            allergies TEXT,            -- JSON array as text
+            chronic_conditions TEXT,     -- JSON array as text
+            current_medications TEXT,    -- JSON array as text
+            past_surgeries TEXT,         -- JSON array as text
+            emergency_contact_name TEXT,
+            emergency_contact_phone TEXT,
+            emergency_contact_relation TEXT,
             emergency_contact TEXT,
             updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     """)
+
+    # ── Migration: add new columns if DB already exists ──
+    existing_cols = {row[1] for row in cursor.execute("PRAGMA table_info(health_profiles)").fetchall()}
+    for col, definition in [
+        ("full_name",                  "TEXT"),
+        ("gender",                     "TEXT"),
+        ("height_cm",                  "REAL"),
+        ("weight_kg",                  "REAL"),
+        ("past_surgeries",             "TEXT"),
+        ("emergency_contact_name",     "TEXT"),
+        ("emergency_contact_phone",    "TEXT"),
+        ("emergency_contact_relation", "TEXT"),
+    ]:
+        if col not in existing_cols:
+            cursor.execute(f"ALTER TABLE health_profiles ADD COLUMN {col} {definition}")
 
     conn.commit()
     conn.close()
