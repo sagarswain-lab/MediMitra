@@ -38,14 +38,29 @@ async def google_sign_in(req: GoogleAuthRequest):
         )
 
     # ── Verify the ID token with Google's public keys ──
+    # Allow up to 10 seconds of clock skew to handle slight time differences
+    import time
     try:
         id_info = id_token.verify_oauth2_token(
             req.id_token,
             google_requests.Request(),
             GOOGLE_CLIENT_ID,
+            clock_skew_in_seconds=10
         )
     except ValueError as e:
-        raise HTTPException(status_code=401, detail=f"Invalid Google ID token: {e}")
+        err_msg = str(e)
+        # Give a more actionable error for the most common misconfiguration
+        if "audience" in err_msg.lower():
+            raise HTTPException(
+                status_code=401,
+                detail="Google Client ID mismatch. Ensure GOOGLE_CLIENT_ID in .env matches the OAuth client used in the frontend."
+            )
+        if "token" in err_msg.lower() or "expired" in err_msg.lower():
+            raise HTTPException(
+                status_code=401,
+                detail=f"Invalid or expired Google token. Please try signing in again. ({err_msg})"
+            )
+        raise HTTPException(status_code=401, detail=f"Google token verification failed: {err_msg}")
 
     google_sub = id_info["sub"]
     email      = id_info.get("email", "")
