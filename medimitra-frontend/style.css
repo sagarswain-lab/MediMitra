@@ -276,6 +276,17 @@
       min-height: 100vh;
     }
 
+    /* ── APP FOOTER ── */
+    .app-footer {
+      background: transparent;
+      border-top: 1px solid rgba(255,255,255,0.06);
+      padding: 10px 32px;
+      text-align: center;
+      font-size: 10px;
+      color: rgba(148, 163, 184, 0.45);
+      letter-spacing: 0.02em;
+    }
+
     .section {
       display: none;
       padding: 32px;
@@ -2215,4 +2226,50 @@
       #grid-features {
         grid-template-columns: repeat(4, 1fr) !important;
       }
+    }
+
+    /* Emergency Modal Styles */
+    .emergency-number-btn {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 16px;
+      background: linear-gradient(135deg, #ef4444, #dc2626);
+      color: #ffffff !important;
+      border-radius: 12px;
+      text-decoration: none;
+      font-family: var(--font-display);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
+    }
+    .emergency-number-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 18px rgba(239, 68, 68, 0.35);
+      color: #ffffff !important;
+    }
+    .emergency-number-btn i {
+      font-size: 24px;
+      width: 32px;
+      text-align: center;
+    }
+    .emergency-contact-link {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      padding: 14px;
+      background: rgba(16, 185, 129, 0.1);
+      color: var(--primary-light) !important;
+      border: 1px dashed var(--primary);
+      border-radius: 12px;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 14px;
+      transition: all 0.2s ease;
+      margin-top: 8px;
+    }
+    .emergency-contact-link:hover {
+      background: rgba(16, 185, 129, 0.18);
+      transform: translateY(-1px);
+      color: var(--primary-light) !important;
     }
