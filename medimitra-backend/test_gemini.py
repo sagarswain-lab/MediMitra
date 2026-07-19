@@ -1,23 +1,20 @@
-"""List all available Gemini models for these API keys."""
-import sys
+"""Quick test to verify Gemini vision API with key rotation."""
+import sys, base64
 sys.stdout.reconfigure(encoding='utf-8', errors='replace')
 
-import google.generativeai as genai
-from dotenv import load_dotenv
-import os
+from services.llm_service import ask_gemini_vision
 
-load_dotenv(override=True)
-raw = os.getenv("GEMINI_API_KEY", "")
-keys = [k.strip() for k in raw.split(",") if k.strip()]
+# 1x1 white PNG - properly padded base64
+test_img = "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAC0lEQVQI12NgAAIABQAABjE+ibYAAAAASUVORK5CYII="
 
-for key in keys:
-    masked = f"...{key[-4:]}"
-    print(f"\n--- Key {masked} ---")
-    try:
-        genai.configure(api_key=key)
-        models = genai.list_models()
-        vision_models = [m for m in models if 'generateContent' in m.supported_generation_methods]
-        for m in vision_models:
-            print(f"  {m.name}")
-    except Exception as e:
-        print(f"  Error: {e}")
+print("Testing Gemini vision with 3-key rotation and gemini-2.5-flash...")
+try:
+    result = ask_gemini_vision(
+        'What is in this image? Reply with JSON only: {"color": "your answer"}',
+        test_img
+    )
+    print("Result:", result)
+    print("\nOK - Gemini vision is working!")
+except Exception as e:
+    print(f"\nFAIL - Error: {e}")
+

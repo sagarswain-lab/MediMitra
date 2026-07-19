@@ -280,6 +280,7 @@ Copy `.env.example` to `.env` and fill in your keys:
 
 ```env
 # Required
+GEMINI_API_KEY=your_gemini_key_here
 GROQ_API_KEY=your_groq_key_here
 
 # Required for Google Sign-In
