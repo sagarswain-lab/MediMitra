@@ -162,6 +162,14 @@ def ask_gemini_vision(prompt: str, image_b64: str) -> dict:
         mime_type = "image/jpeg"
 
     import google.generativeai as genai
+    from google.generativeai.types import HarmCategory, HarmBlockThreshold
+
+    safety_settings = {
+        HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
+        HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
+        HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
+        HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
+    }
 
     last_error = None
     for attempt, key in enumerate(gemini_keys * 2):  # try each key twice
@@ -179,7 +187,9 @@ def ask_gemini_vision(prompt: str, image_b64: str) -> dict:
                 generation_config=genai.types.GenerationConfig(
                     temperature=0.4,
                     max_output_tokens=4096,
+                    response_mime_type="application/json",
                 ),
+                safety_settings=safety_settings,
             )
 
             text = response.text
@@ -201,6 +211,7 @@ def ask_gemini_vision(prompt: str, image_b64: str) -> dict:
     raise Exception(
         f"All Gemini API keys exhausted. Last error: {last_error}"
     )
+
 
 
 
