@@ -8,3 +8,5 @@ medimitra.db
 .env.*
 !.env.example
 .vscode
+# Runtime font cache (downloaded on first PDF generation)
+fonts_cache/
