@@ -1468,35 +1468,46 @@ async function initGoogleSignIn() {
 }
 
 async function handleCredentialResponse(response) {
-  showLoading('Signing in with Google...');
+  showLoading('Connecting to server...');
+  
   try {
-    // Retry logic for Render cold starts
-    let res;
+    // Step 1: Wake up the server with a health check (Render cold start can take 30-60s)
+    let serverReady = false;
     let attempts = 0;
-    const maxAttempts = 3;
+    const maxAttempts = 6;
     
-    while (attempts < maxAttempts) {
+    while (attempts < maxAttempts && !serverReady) {
       try {
         if (attempts > 0) {
-          showLoading(`Waking up server... (attempt ${attempts + 1}/${maxAttempts})`);
-          await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2s between retries
+          showLoading(`Waking up server... (${attempts}/${maxAttempts})`);
+          await new Promise(resolve => setTimeout(resolve, 5000)); // Wait 5s between attempts
         }
         
-        res = await fetch(`${API}/api/auth/google`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ id_token: response.credential }),
-          signal: AbortSignal.timeout(15000) // 15 second timeout
+        const healthCheck = await fetch(`${API}/health`, {
+          method: 'GET',
+          signal: AbortSignal.timeout(10000) // 10 second timeout for health check
         });
         
-        break; // Success, exit retry loop
-      } catch (fetchError) {
+        if (healthCheck.ok) {
+          serverReady = true;
+          break;
+        }
+      } catch (e) {
         attempts++;
         if (attempts >= maxAttempts) {
-          throw new Error('Backend server not responding. Please try again in a minute.');
+          throw new Error('Server not responding. It may be waking up - please wait 30 seconds and try again.');
         }
       }
     }
+    
+    // Step 2: Now authenticate with Google
+    showLoading('Signing in with Google...');
+    const res = await fetch(`${API}/api/auth/google`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ id_token: response.credential }),
+      signal: AbortSignal.timeout(30000) // 30 second timeout
+    });
 
     if (!res.ok) {
       let errDetail = `HTTP ${res.status}`;
