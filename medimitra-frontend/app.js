@@ -17,22 +17,22 @@ let userSession = {
   picture: null
 };
 
-async function wakeUpServer() {
-  const btn = document.getElementById('wakeup-btn');
-  const section = document.getElementById('server-wakeup-section');
-  const signinSection = document.getElementById('signin-section');
+async function signInWithGoogle() {
+  const btn = document.getElementById('google-signin-main-btn');
+  const originalHTML = btn.innerHTML;
   
   btn.disabled = true;
-  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Waking up server...';
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Preparing...';
   
   try {
+    // Step 1: Wake up the server
     let attempts = 0;
-    const maxAttempts = 10; // 10 attempts × 3s = 30 seconds
+    const maxAttempts = 10;
     let serverReady = false;
     
     while (attempts < maxAttempts && !serverReady) {
       try {
-        btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Waking up... (${attempts * 3}s)`;
+        btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Connecting... (${attempts * 3}s)`;
         
         const res = await fetch(`${API}/health`, {
           method: 'GET',
@@ -44,25 +44,28 @@ async function wakeUpServer() {
           break;
         }
       } catch (e) {
-        // Retry after 3 seconds
         await new Promise(resolve => setTimeout(resolve, 3000));
         attempts++;
       }
     }
     
-    if (serverReady) {
-      showToast('Server is ready! You can now sign in.', 'success');
-      section.style.display = 'none';
-      signinSection.style.display = 'block';
-      // Re-initialize Google Sign-In to render button
-      await initGoogleSignIn();
-    } else {
-      throw new Error('Server took too long to wake up. Please try again.');
+    if (!serverReady) {
+      throw new Error('Server is taking too long to start. Please try again in a minute.');
     }
+    
+    // Step 2: Initialize Google Sign-In
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading Google...';
+    await initGoogleSignIn();
+    
+    // Step 3: Trigger Google popup
+    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Opening sign-in...';
+    await new Promise(resolve => setTimeout(resolve, 500));
+    google.accounts.id.prompt();
+    
   } catch (e) {
-    showToast(e.message || 'Failed to wake up server. Please try again.', 'error');
+    showToast(e.message || 'Failed to sign in. Please try again.', 'error');
     btn.disabled = false;
-    btn.innerHTML = '<i class="fas fa-power-off"></i> Start Server (Try Again)';
+    btn.innerHTML = originalHTML;
   }
 }
 
