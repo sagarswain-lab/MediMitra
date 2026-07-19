@@ -1384,7 +1384,7 @@
           }
 
           .lp-btn-ghost-nav {
-            display: none; /* hide "See Personalization" on tablet */
+            display: none !important; /* hide "See Personalization" on tablet/mobile */
           }
 
           .lp-hero-inner {
@@ -1450,14 +1450,18 @@
           /* ── Nav ── */
           .lp-nav {
             padding: 0 14px;
-            height: 58px;
+            height: 56px;
+          }
+          .lp-nav-cta {
+            gap: 6px;
           }
           .lp-btn-ghost-nav {
-            display: none;
+            display: none !important;
           }
           .lp-btn-nav {
-            font-size: 12px;
-            padding: 8px 14px;
+            font-size: 11px;
+            padding: 7px 11px;
+            white-space: nowrap;
           }
 
           /* ── Hero ── */
