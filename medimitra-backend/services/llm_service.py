@@ -1,12 +1,16 @@
 """
-llm_service.py — LLM service layer (now powered by Groq).
+llm_service.py — LLM service layer.
 
-Public API is kept identical so no route file needs to change other than the import module name:
-  - ask_gemini(prompt)          → str
-  - ask_gemini_json(prompt)     → dict
-  - ask_gemini_vision(prompt, image_b64) → dict
+Text tasks  → Groq (llama-3.3-70b-versatile)
+Vision tasks → Google Gemini (gemini-1.5-flash, free tier)
 
-Groq SDK docs: https://console.groq.com/docs
+Public API (unchanged):
+  - ask_gemini(prompt)               → str
+  - ask_gemini_json(prompt)          → dict
+  - ask_gemini_vision(prompt, b64)   → dict
+
+Groq SDK:   https://console.groq.com/docs
+Gemini SDK: https://ai.google.dev
 """
 import os
 import json
@@ -19,8 +23,8 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # ── Model names ──────────────────────────────────────────────
-TEXT_MODEL   = "llama-3.3-70b-versatile"          # fast, powerful text model
-VISION_MODEL = "meta-llama/llama-4-scout-17b-16e-instruct"  # multimodal / vision
+TEXT_MODEL   = "llama-3.3-70b-versatile"   # Groq — fast text model
+VISION_MODEL = "gemini-1.5-flash"           # Google Gemini — free vision model
 
 # ── Key rotation ─────────────────────────────────────────────
 current_key_index = 0
@@ -126,42 +130,79 @@ def ask_gemini_json(prompt: str) -> dict:
 
 def ask_gemini_vision(prompt: str, image_b64: str) -> dict:
     """
-    Send a text prompt + base64-encoded image to Groq vision model.
+    Send a text prompt + base64-encoded image to Google Gemini vision model.
     Returns parsed JSON.
 
-    Uses VISION_MODEL (meta-llama/llama-4-scout-17b-16e-instruct) which
-    supports multimodal image input via the OpenAI-compatible messages API.
+    Supports comma-separated GEMINI_API_KEY list for key rotation on quota errors.
     """
+    load_dotenv(override=True)
+    raw_keys = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY") or ""
+    gemini_keys = [k.strip() for k in raw_keys.split(",") if k.strip()]
+
+    if not gemini_keys:
+        raise Exception(
+            "No Gemini API key found. Add GEMINI_API_KEY=your_key to your .env file. "
+            "Get a free key at https://aistudio.google.com/app/apikey"
+        )
+
     full_prompt = (
         prompt
         + "\n\nIMPORTANT: Respond with valid JSON only. "
           "No markdown, no backticks, no extra text. Just pure JSON."
     )
 
-    # Build multimodal message: text + inline base64 image
-    messages = [
-        {
-            "role": "user",
-            "content": [
-                {
-                    "type": "text",
-                    "text": full_prompt,
-                },
-                {
-                    "type": "image_url",
-                    "image_url": {
-                        "url": f"data:image/jpeg;base64,{image_b64}",
-                    },
-                },
-            ],
-        }
-    ]
+    # Decode base64 image bytes once (shared across key attempts)
+    image_bytes = base64.b64decode(image_b64)
+    if image_bytes[:4] == b'\x89PNG':
+        mime_type = "image/png"
+    elif image_bytes[:2] == b'\xff\xd8':
+        mime_type = "image/jpeg"
+    elif b'WEBP' in image_bytes[:12]:
+        mime_type = "image/webp"
+    else:
+        mime_type = "image/jpeg"
 
-    try:
-        text = _chat_with_retry(messages, model=VISION_MODEL)
-        return _parse_json(text)
-    except Exception as e:
-        raise Exception(f"Groq Vision API error: {str(e)}")
+    import google.generativeai as genai
+
+    last_error = None
+    for attempt, key in enumerate(gemini_keys * 2):  # try each key twice
+        masked = f"...{key[-4:]}" if len(key) > 4 else "***"
+        print(f"--- [Gemini] Attempt {attempt + 1}, key ends {masked} ---")
+        try:
+            genai.configure(api_key=key)
+            model = genai.GenerativeModel(VISION_MODEL)
+
+            response = model.generate_content(
+                [
+                    full_prompt,
+                    {"inline_data": {"mime_type": mime_type, "data": image_bytes}},
+                ],
+                generation_config=genai.types.GenerationConfig(
+                    temperature=0.4,
+                    max_output_tokens=4096,
+                ),
+            )
+
+            text = response.text
+            print(f"[Gemini Vision] Response (first 200 chars): {text[:200]}")
+            return _parse_json(text)
+
+        except Exception as e:
+            err = str(e).lower()
+            last_error = e
+            # Rotate key on quota / rate limit errors
+            if any(kw in err for kw in ("quota", "rate", "429", "resource_exhausted", "limit")):
+                print(f"[Gemini] Quota/rate limit on key {masked}. Rotating...")
+                time.sleep(1)
+                continue
+            # Non-rotatable error — raise immediately
+            print(f"[Gemini] Non-retriable error: {e}")
+            raise Exception(f"Gemini Vision API error: {str(e)}")
+
+    raise Exception(
+        f"All Gemini API keys exhausted. Last error: {last_error}"
+    )
+
 
 
 def stream_llm(prompt: str):
