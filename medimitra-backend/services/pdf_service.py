@@ -1,5 +1,6 @@
 import io
 import os
+import requests
 from reportlab.lib.pagesizes import letter
 from reportlab.lib import colors
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
@@ -8,28 +9,63 @@ from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, Tabl
 from reportlab.pdfbase import pdfmetrics
 from reportlab.pdfbase.ttfonts import TTFont
 
-# ── Font Configuration (Indic Unicode Support) ──
-font_name = 'Helvetica'
-font_bold_name = 'Helvetica-Bold'
+# ── Font Configuration (Indic Unicode Support — cross-platform) ──
+def _ensure_unicode_font():
+    """
+    Returns (font_name, font_bold_name) after registering a Unicode-capable font.
+    Tries system fonts first (Windows / Linux / macOS), then downloads
+    Noto Sans as a guaranteed fallback that works identically on Render/Linux.
+    Runs once at module import — result is cached in module-level variables.
+    """
+    system_font_paths = [
+        "C:\\Windows\\Fonts\\Nirmala.ttc",                           # Windows
+        "/usr/share/fonts/truetype/nirmala/Nirmala.ttf",            # Linux (rare)
+        "/usr/share/fonts/truetype/noto/NotoSans-Regular.ttf",      # Linux (apt noto)
+        "/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf",          # Linux (common default)
+        "/System/Library/Fonts/Supplemental/DevanagariMT.ttc",      # macOS
+    ]
+    for font_path in system_font_paths:
+        if os.path.exists(font_path):
+            try:
+                pdfmetrics.registerFont(TTFont('CustomFont', font_path))
+                pdfmetrics.registerFont(TTFont('CustomFont-Bold', font_path))
+                print(f"ReportLab: Registered system font from {font_path}")
+                return 'CustomFont', 'CustomFont-Bold'
+            except Exception as e:
+                print(f"ReportLab: Font load failed ({font_path}): {e}")
+                continue
 
-# Try Windows font first, then Linux fallbacks
-font_paths = [
-    "C:\\Windows\\Fonts\\Nirmala.ttc",                         # Windows
-    "/usr/share/fonts/truetype/nirmala/Nirmala.ttf",          # Linux
-    "/usr/share/fonts/truetype/freefont/FreeSans.ttf",        # Linux fallback
-]
-for font_path in font_paths:
-    if os.path.exists(font_path):
+    # No system font found — download Noto Sans once and cache locally.
+    # This guarantees identical Unicode rendering on Render / Linux containers.
+    cache_dir = os.path.join(os.path.dirname(__file__), "..", "fonts_cache")
+    os.makedirs(cache_dir, exist_ok=True)
+    local_font_path = os.path.join(cache_dir, "NotoSans-Regular.ttf")
+
+    if not os.path.exists(local_font_path):
         try:
-            pdfmetrics.registerFont(TTFont('CustomFont', font_path))
-            pdfmetrics.registerFont(TTFont('CustomFont-Bold', font_path))
-            font_name = 'CustomFont'
-            font_bold_name = 'CustomFont'
-            print(f"ReportLab: Registered font from {font_path}")
-            break
+            print("ReportLab: No system font found — downloading Noto Sans (one-time)...")
+            url = "https://github.com/googlefonts/noto-fonts/raw/main/hinted/ttf/NotoSans/NotoSans-Regular.ttf"
+            resp = requests.get(url, timeout=15)
+            resp.raise_for_status()
+            with open(local_font_path, "wb") as f:
+                f.write(resp.content)
+            print("ReportLab: Noto Sans downloaded successfully.")
         except Exception as e:
-            print(f"ReportLab: Font load failed ({font_path}): {e}")
-            continue
+            print(f"ReportLab: Failed to download Noto Sans fallback: {e}")
+            return 'Helvetica', 'Helvetica-Bold'   # ReportLab built-in — always exists
+
+    try:
+        pdfmetrics.registerFont(TTFont('CustomFont', local_font_path))
+        pdfmetrics.registerFont(TTFont('CustomFont-Bold', local_font_path))
+        print("ReportLab: Registered downloaded Noto Sans font.")
+        return 'CustomFont', 'CustomFont-Bold'
+    except Exception as e:
+        print(f"ReportLab: Failed to register downloaded font: {e}")
+        return 'Helvetica', 'Helvetica-Bold'
+
+
+# Runs once at import time — no per-request overhead
+font_name, font_bold_name = _ensure_unicode_font()
 
 
 # ── Translation Dictionaries for PDF Reports ──
