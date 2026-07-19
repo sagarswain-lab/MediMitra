@@ -47,7 +47,7 @@ def _get_client():
 
 def add_memory(user_id: str, content: str, metadata: dict = None) -> None:
     """
-    Store a memory entry tied to a user.
+    Store a memory entry tied to a user asynchronously.
 
     Silently skips if:
     - user_id is None / empty
@@ -56,19 +56,23 @@ def add_memory(user_id: str, content: str, metadata: dict = None) -> None:
     if not user_id:
         return
 
-    client = _get_client()
-    if client is None:
-        return
+    import threading
 
-    try:
-        messages = [{"role": "user", "content": content}]
-        kwargs = {"user_id": user_id, "messages": messages}
-        if metadata:
-            kwargs["metadata"] = metadata
-        client.add(**kwargs)
-    except Exception as e:
-        # Memory is best-effort — don't crash the request
-        print(f"[Mem0] add_memory error (non-fatal): {e}")
+    def _run_add():
+        client = _get_client()
+        if client is None:
+            return
+        try:
+            messages = [{"role": "user", "content": content}]
+            kwargs = {"user_id": user_id, "messages": messages}
+            if metadata:
+                kwargs["metadata"] = metadata
+            client.add(**kwargs)
+        except Exception as e:
+            # Memory is best-effort — don't crash the request
+            print(f"[Mem0] add_memory error (non-fatal): {e}")
+
+    threading.Thread(target=_run_add, daemon=True).start()
 
 
 def get_relevant_memories(user_id: str, query: str, limit: int = 5) -> list[str]:
