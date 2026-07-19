@@ -1404,7 +1404,7 @@
 
     @media (max-width: 480px) {
       .nav-brand {
-        display: none !important;
+        font-size: 15px;
       }
 
       #navbar {
