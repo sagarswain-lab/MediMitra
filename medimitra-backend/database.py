@@ -149,6 +149,9 @@ def get_connection():
     """
     Legacy function for raw SQL compatibility.
     Returns a raw DB-API connection that supports dict-like row access.
+    
+    For PostgreSQL: Uses SQLAlchemy's engine to get connection (handles URL parsing correctly)
+    For SQLite: Uses sqlite3 with Row factory
     """
     if "sqlite" in str(engine.url):
         # SQLite: use sqlite3 with Row factory
@@ -157,23 +160,19 @@ def get_connection():
         conn.row_factory = sqlite3.Row
         return conn
     else:
-        # PostgreSQL: use psycopg2 with RealDictCursor
-        # We need to create connection directly with psycopg2 to set cursor_factory
-        import psycopg2
-        import psycopg2.extras
-        from urllib.parse import urlparse
+        # PostgreSQL: Let SQLAlchemy handle the connection
+        # Use engine.raw_connection() which already has correct credentials
+        conn = engine.raw_connection()
         
-        # Parse DATABASE_URL to get connection parameters
-        url = urlparse(str(engine.url))
-        conn = psycopg2.connect(
-            host=url.hostname,
-            port=url.port,
-            user=url.username,
-            password=url.password,
-            database=url.path[1:],  # Remove leading /
-            cursor_factory=psycopg2.extras.RealDictCursor
-        )
-        conn.autocommit = False  # Match SQLAlchemy behavior
+        # Wrap the connection to provide dict-like row access
+        # This is a workaround - the connection's cursor will need DictCursor
+        original_cursor = conn.cursor
+        
+        def cursor_with_dict(*args, **kwargs):
+            import psycopg2.extras
+            return original_cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        
+        conn.cursor = cursor_with_dict
         return conn
 
 
