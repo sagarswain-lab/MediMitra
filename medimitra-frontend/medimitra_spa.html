@@ -3361,13 +3361,10 @@
           Your medical history, allergies, chronic conditions, and emergency contacts are stored securely and used to personalize your symptom checks.
         </p>
         
-        <!-- Single Sign-In Button (auto-wakes server) -->
-        <button id="google-signin-main-btn" class="btn btn-primary" onclick="signInWithGoogle()" style="margin:0 auto;display:flex;align-items:center;gap:8px;">
-          <i class="fab fa-google"></i> Sign in with Google
-        </button>
-        
-        <!-- Google SDK button container (hidden, used after server wakes) -->
-        <div id="google-signin-btn-profile" style="display:flex;justify-content:center;margin-top:12px;min-height:44px;"></div>
+        <!-- Google SDK renders the official sign-in button here -->
+        <div id="google-signin-btn-profile" style="display:flex;justify-content:center;min-height:44px;"></div>
+        <!-- Hidden placeholder so signOut() can reset it without errors -->
+        <button id="google-signin-main-btn" style="display:none;"></button>
       </div>
 
       <!-- Logged In Form -->
