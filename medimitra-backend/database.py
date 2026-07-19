@@ -145,13 +145,49 @@ def get_db() -> Session:
         db.close()
 
 
+class PostgreSQLConnectionWrapper:
+    """
+    Wrapper for psycopg2 connection that adds execute() method like sqlite3.
+    Makes PostgreSQL connections behave like SQLite connections for backward compatibility.
+    """
+    def __init__(self, psycopg2_conn):
+        self._conn = psycopg2_conn
+        self._cursor = None
+    
+    def execute(self, sql, params=None):
+        """Execute SQL and return cursor with results"""
+        import psycopg2.extras
+        self._cursor = self._conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        if params:
+            self._cursor.execute(sql, params)
+        else:
+            self._cursor.execute(sql)
+        return self._cursor
+    
+    def commit(self):
+        return self._conn.commit()
+    
+    def rollback(self):
+        return self._conn.rollback()
+    
+    def close(self):
+        if self._cursor:
+            self._cursor.close()
+        return self._conn.close()
+    
+    def cursor(self, *args, **kwargs):
+        import psycopg2.extras
+        return self._conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor, *args, **kwargs)
+    
+    def __getattr__(self, name):
+        # Delegate all other attributes to the wrapped connection
+        return getattr(self._conn, name)
+
+
 def get_connection():
     """
     Legacy function for raw SQL compatibility.
-    Returns a raw DB-API connection that supports dict-like row access.
-    
-    For PostgreSQL: Uses SQLAlchemy's engine to get connection (handles URL parsing correctly)
-    For SQLite: Uses sqlite3 with Row factory
+    Returns a connection that supports conn.execute() for both SQLite and PostgreSQL.
     """
     if "sqlite" in str(engine.url):
         # SQLite: use sqlite3 with Row factory
@@ -160,20 +196,9 @@ def get_connection():
         conn.row_factory = sqlite3.Row
         return conn
     else:
-        # PostgreSQL: Let SQLAlchemy handle the connection
-        # Use engine.raw_connection() which already has correct credentials
+        # PostgreSQL: wrap connection to add execute() method
         conn = engine.raw_connection()
-        
-        # Wrap the connection to provide dict-like row access
-        # This is a workaround - the connection's cursor will need DictCursor
-        original_cursor = conn.cursor
-        
-        def cursor_with_dict(*args, **kwargs):
-            import psycopg2.extras
-            return original_cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-        
-        conn.cursor = cursor_with_dict
-        return conn
+        return PostgreSQLConnectionWrapper(conn)
 
 
 def init_db():
