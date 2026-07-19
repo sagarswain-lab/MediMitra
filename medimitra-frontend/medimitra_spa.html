@@ -3360,12 +3360,26 @@
         <p style="color:var(--text-muted);font-size:14px;margin-bottom:24px;max-width:400px;margin: 0 auto 24px;">
           Your medical history, allergies, chronic conditions, and emergency contacts are stored securely and used to personalize your symptom checks.
         </p>
-        <!-- Google SDK renders here -->
-        <div id="google-signin-btn-profile" style="display:flex;justify-content:center;margin-bottom:12px;min-height:44px;"></div>
-        <!-- Always-visible fallback button -->
-        <button id="google-signin-fallback-btn" class="btn btn-primary" onclick="googleSignInTrigger()" style="margin:0 auto;">
-          <i class="fab fa-google"></i> Sign In with Google
-        </button>
+        
+        <!-- Server Wake-Up Section -->
+        <div id="server-wakeup-section" style="margin-bottom:24px;">
+          <button id="wakeup-btn" class="btn btn-primary" onclick="wakeUpServer()" style="margin:0 auto;display:flex;align-items:center;gap:8px;">
+            <i class="fas fa-power-off"></i> Start Server (30s)
+          </button>
+          <p style="color:var(--text-muted);font-size:12px;margin-top:8px;">
+            Server is sleeping. Click to wake it up before signing in.
+          </p>
+        </div>
+        
+        <!-- Google Sign-In Section (hidden until server is ready) -->
+        <div id="signin-section" style="display:none;">
+          <!-- Google SDK renders here -->
+          <div id="google-signin-btn-profile" style="display:flex;justify-content:center;margin-bottom:12px;min-height:44px;"></div>
+          <!-- Always-visible fallback button -->
+          <button id="google-signin-fallback-btn" class="btn btn-primary" onclick="googleSignInTrigger()" style="margin:0 auto;">
+            <i class="fab fa-google"></i> Sign In with Google
+          </button>
+        </div>
       </div>
 
       <!-- Logged In Form -->

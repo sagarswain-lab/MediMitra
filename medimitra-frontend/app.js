@@ -17,6 +17,55 @@ let userSession = {
   picture: null
 };
 
+async function wakeUpServer() {
+  const btn = document.getElementById('wakeup-btn');
+  const section = document.getElementById('server-wakeup-section');
+  const signinSection = document.getElementById('signin-section');
+  
+  btn.disabled = true;
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Waking up server...';
+  
+  try {
+    let attempts = 0;
+    const maxAttempts = 10; // 10 attempts × 3s = 30 seconds
+    let serverReady = false;
+    
+    while (attempts < maxAttempts && !serverReady) {
+      try {
+        btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Waking up... (${attempts * 3}s)`;
+        
+        const res = await fetch(`${API}/health`, {
+          method: 'GET',
+          signal: AbortSignal.timeout(5000)
+        });
+        
+        if (res.ok) {
+          serverReady = true;
+          break;
+        }
+      } catch (e) {
+        // Retry after 3 seconds
+        await new Promise(resolve => setTimeout(resolve, 3000));
+        attempts++;
+      }
+    }
+    
+    if (serverReady) {
+      showToast('Server is ready! You can now sign in.', 'success');
+      section.style.display = 'none';
+      signinSection.style.display = 'block';
+      // Re-initialize Google Sign-In to render button
+      await initGoogleSignIn();
+    } else {
+      throw new Error('Server took too long to wake up. Please try again.');
+    }
+  } catch (e) {
+    showToast(e.message || 'Failed to wake up server. Please try again.', 'error');
+    btn.disabled = false;
+    btn.innerHTML = '<i class="fas fa-power-off"></i> Start Server (Try Again)';
+  }
+}
+
 function googleSignInTrigger() {
   // Try Google One Tap prompt first
   try {
