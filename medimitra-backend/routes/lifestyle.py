@@ -22,20 +22,58 @@ async def generate_lifestyle_plan(
     user_id = str(current_user.get("user_id", "")) if current_user else ""
     user_context = get_user_health_context(user_id) if user_id else ""
 
+    # Load allergies directly from DB for explicit banned-food enforcement
+    user_allergies = []
+    user_conditions = []
+    if user_id:
+        try:
+            uid_int = int(user_id)
+            conn = get_connection()
+            row = conn.execute(
+                "SELECT allergies, chronic_conditions FROM health_profiles WHERE user_id = ?",
+                (uid_int,)
+            ).fetchone()
+            conn.close()
+            if row:
+                user_allergies  = json.loads(row["allergies"])          if row["allergies"]          else []
+                user_conditions = json.loads(row["chronic_conditions"]) if row["chronic_conditions"] else []
+        except Exception:
+            pass
+
     patient_profile_section = ""
     if user_context:
+        # Build a banned foods list from actual allergies
+        banned_foods_lines = []
+        for allergen in user_allergies:
+            al = allergen.lower()
+            if "peanut" in al or "groundnut" in al:
+                banned_foods_lines.append(f"- {allergen} (includes peanut butter, groundnuts, mixed nuts with peanuts)")
+            elif "milk" in al or "dairy" in al or "lactose" in al:
+                banned_foods_lines.append(f"- {allergen} (includes milk, cheese, butter, yoghurt, cream, whey)")
+            elif "gluten" in al or "wheat" in al:
+                banned_foods_lines.append(f"- {allergen} (includes bread, wheat flour, pasta, chapati)")
+            else:
+                banned_foods_lines.append(f"- {allergen}")
+
+        banned_block = "\n".join(banned_foods_lines) if banned_foods_lines else "- None"
+
         patient_profile_section = f"""
 PATIENT PROFILE — STRICTLY FOLLOW THIS:
 {user_context}
 
-CRITICAL RULES for meal planning:
-- NEVER suggest foods the patient is allergic to
+══════════════════════════════════════════════
+🚫 BANNED FOODS — PATIENT IS ALLERGIC TO THESE:
+{banned_block}
+⚠️  NEVER include these in ANY meal, snack, drink, or ingredient list across all 7 days.
+══════════════════════════════════════════════
+
+ADDITIONAL RULES:
 - NEVER suggest foods that worsen their chronic conditions
-  (e.g. no sugary foods for Diabetics, no salty foods for High BP patients, no dairy if lactose intolerant)
+  (e.g. no sugary foods for Diabetics, no salty foods for High BP patients)
 - ALWAYS consider their current medications (e.g. avoid Vitamin K rich foods if on Warfarin)
 - Tailor exercise intensity to their conditions
   (e.g. low impact for Heart patients, no high intensity for Asthma patients)
-- Mention at start of plan: personalized for [conditions]
+- Start the plan with: "Personalized for [Name] — conditions: [list or None]"
 """
 
     prompt = f"""
