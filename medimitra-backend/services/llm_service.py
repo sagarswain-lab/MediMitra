@@ -161,35 +161,54 @@ def ask_gemini_vision(prompt: str, image_b64: str) -> dict:
     else:
         mime_type = "image/jpeg"
 
-    import google.generativeai as genai
-    from google.generativeai.types import HarmCategory, HarmBlockThreshold
-
-    safety_settings = {
-        HarmCategory.HARM_CATEGORY_HATE_SPEECH: HarmBlockThreshold.BLOCK_NONE,
-        HarmCategory.HARM_CATEGORY_HARASSMENT: HarmBlockThreshold.BLOCK_NONE,
-        HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT: HarmBlockThreshold.BLOCK_NONE,
-        HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT: HarmBlockThreshold.BLOCK_NONE,
-    }
+    from google import genai
+    from google.genai import types
 
     last_error = None
     for attempt, key in enumerate(gemini_keys * 2):  # try each key twice
         masked = f"...{key[-4:]}" if len(key) > 4 else "***"
         print(f"--- [Gemini] Attempt {attempt + 1}, key ends {masked} ---")
         try:
-            genai.configure(api_key=key)
-            model = genai.GenerativeModel(VISION_MODEL)
+            client = genai.Client(api_key=key)
 
-            response = model.generate_content(
-                [
-                    full_prompt,
-                    {"inline_data": {"mime_type": mime_type, "data": image_bytes}},
-                ],
-                generation_config=genai.types.GenerationConfig(
-                    temperature=0.4,
-                    max_output_tokens=4096,
-                    response_mime_type="application/json",
+            # Create safety settings with all categories mapped to BLOCK_NONE
+            safety_settings = [
+                types.SafetySetting(
+                    category=types.HarmCategory.HARM_CATEGORY_HATE_SPEECH,
+                    threshold=types.HarmBlockThreshold.BLOCK_NONE,
                 ),
-                safety_settings=safety_settings,
+                types.SafetySetting(
+                    category=types.HarmCategory.HARM_CATEGORY_HARASSMENT,
+                    threshold=types.HarmBlockThreshold.BLOCK_NONE,
+                ),
+                types.SafetySetting(
+                    category=types.HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
+                    threshold=types.HarmBlockThreshold.BLOCK_NONE,
+                ),
+                types.SafetySetting(
+                    category=types.HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
+                    threshold=types.HarmBlockThreshold.BLOCK_NONE,
+                ),
+                types.SafetySetting(
+                    category=types.HarmCategory.HARM_CATEGORY_CIVIC_INTEGRITY,
+                    threshold=types.HarmBlockThreshold.BLOCK_NONE,
+                ),
+            ]
+
+            response = client.models.generate_content(
+                model=VISION_MODEL,
+                contents=[
+                    types.Part.from_bytes(
+                        data=image_bytes,
+                        mime_type=mime_type,
+                    ),
+                    full_prompt
+                ],
+                config=types.GenerateContentConfig(
+                    temperature=0.4,
+                    response_mime_type="application/json",
+                    safety_settings=safety_settings,
+                )
             )
 
             text = response.text
