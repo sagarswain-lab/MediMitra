@@ -170,5 +170,4 @@ def init_db():
     print("[OK] Database initialized successfully with PostgreSQL/SQLite")
 
 
-# Run initialization on import
-init_db()
+# Don't run init_db() at import time - let main.py handle it in startup event
