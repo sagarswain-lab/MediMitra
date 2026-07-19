@@ -95,7 +95,7 @@
     .nav-logo {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
     }
 
     .nav-logo-icon {
@@ -1420,7 +1420,12 @@
       }
 
       .emergency-btn {
-        padding: 6px 10px !important;
+        width: 40px !important;
+        height: 40px !important;
+        border-radius: 50% !important;
+        padding: 0 !important;
+        justify-content: center !important;
+        box-shadow: 0 0 20px rgba(239, 68, 68, 0.5);
       }
 
       .emergency-btn .emergency-label {
@@ -1428,7 +1433,11 @@
       }
 
       .emergency-btn .emergency-mobile-label {
-        display: inline !important;
+        display: none !important;
+      }
+
+      .emergency-btn i {
+        font-size: 18px !important;
       }
     }
 
