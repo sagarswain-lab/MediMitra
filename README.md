@@ -217,10 +217,10 @@ Emergency:  Contact name · Phone · Relationship
 │                    USER BROWSER                         │
 │                                                         │
 │  MediMitra SPA (HTML/CSS/JS)                            │
-│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐   │
-│  │ Symptom  │ │Prescript.│ │ Scanner  │ │ Profile  │   │
-│  │ Checker  │ │  Reader  │ │          │ │ + Auth   │   │
-│  └────┬─────┘ └────┬─────┘ └────┬─────┘ └────┬─────┘   │
+│  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐    │
+│  │ Symptom  │ │Prescript.│ │ Scanner  │ │ Profile  │    │
+│  │ Checker  │ │  Reader  │ │          │ │ + Auth   │    │
+│  └────┬─────┘ └────┬─────┘ └────┬─────┘ └────┬─────┘    │
 │       │             │             │             │       │
 │       └─────────────┴─────────────┴─────────────┘       │
 │                           │                             │
@@ -231,25 +231,25 @@ Emergency:  Contact name · Phone · Relationship
 │                  FastAPI BACKEND                        │
 │               (Deployed on Render)                      │
 │                                                         │
-│  ┌─────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐    │
-│  │symptom  │ │prescriptn│ │lifestyle │ │  auth +  │    │
-│  │.py      │ │.py       │ │.py       │ │ profile  │    │
-│  └────┬────┘ └─────┬────┘ └─────┬────┘ └────┬─────┘    │
-│       └─────────────┴─────────┬─┘            │         │
-│                               │              │         │
-│  ┌────────────────────────────▼──┐  ┌────────▼──────┐  │
-│  │  memory_service.py            │  │  SQLite3 DB   │  │
-│  │  get_user_health_context()    │  │  users        │  │
-│  │  → injects profile into LLM  │  │  health_      │  │
-│  │  store_profile_memory() Mem0  │  │  profiles     │  │
-│  └───────────────────────────────┘  └───────────────┘  │
+│  ┌─────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐     │
+│  │symptom  │ │prescriptn│ │lifestyle │ │  auth +  │     │
+│  │.py      │ │.py       │ │.py       │ │ profile  │     │ 
+│  └────┬────┘ └─────┬────┘ └─────┬────┘ └────┬─────┘     │
+│       └─────────────┴─────────┬─┘            │          │
+│                               │              │          │
+│  ┌────────────────────────────▼──┐  ┌────────▼──────┐   │
+│  │  memory_service.py            │  │  SQLite3 DB   │   │
+│  │  get_user_health_context()    │  │  users        │   │
+│  │  → injects profile into LLM  │  │  health_       │   │
+│  │  store_profile_memory() Mem0  │  │  profiles     │   │
+│  └───────────────────────────────┘  └───────────────┘   │
 │                                                         │
-│  ┌────────────────┐  ┌─────────────┐  ┌─────────────┐  │
-│  │ llm_service.py │  │openfda_svc  │  │pdf_service  │  │
-│  │ Groq wrapper   │  │drug data    │  │health card  │  │
-│  │ text+vision+   │  │             │  │+ user pic   │  │
-│  │ streaming      │  │             │  │             │  │
-│  └────────────────┘  └─────────────┘  └─────────────┘  │
+│  ┌────────────────┐  ┌─────────────┐  ┌─────────────┐   │
+│  │ llm_service.py │  │openfda_svc  │  │pdf_service  │   │
+│  │ Groq wrapper   │  │drug data    │  │health card  │   │
+│  │ text+vision+   │  │             │  │+ user pic   │   │
+│  │ streaming      │  │             │  │             │   │
+│  └────────────────┘  └─────────────┘  └─────────────┘   │
 └─────────────────────────────────────────────────────────┘
 ```
 
