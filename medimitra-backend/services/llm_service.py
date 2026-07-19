@@ -23,7 +23,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # ── Model names ──────────────────────────────────────────────
-VISION_MODEL = "gemini-2.0-flash"           # Google Gemini — modern standard vision model
+VISION_MODEL = "gemini-3.5-flash"           # Google Gemini — confirmed working vision model
 
 # ── Key rotation ─────────────────────────────────────────────
 current_key_index = 0
