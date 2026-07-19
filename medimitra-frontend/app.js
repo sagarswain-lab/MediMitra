@@ -1470,11 +1470,33 @@ async function initGoogleSignIn() {
 async function handleCredentialResponse(response) {
   showLoading('Signing in with Google...');
   try {
-    const res = await fetch(`${API}/api/auth/google`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ id_token: response.credential })
-    });
+    // Retry logic for Render cold starts
+    let res;
+    let attempts = 0;
+    const maxAttempts = 3;
+    
+    while (attempts < maxAttempts) {
+      try {
+        if (attempts > 0) {
+          showLoading(`Waking up server... (attempt ${attempts + 1}/${maxAttempts})`);
+          await new Promise(resolve => setTimeout(resolve, 2000)); // Wait 2s between retries
+        }
+        
+        res = await fetch(`${API}/api/auth/google`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id_token: response.credential }),
+          signal: AbortSignal.timeout(15000) // 15 second timeout
+        });
+        
+        break; // Success, exit retry loop
+      } catch (fetchError) {
+        attempts++;
+        if (attempts >= maxAttempts) {
+          throw new Error('Backend server not responding. Please try again in a minute.');
+        }
+      }
+    }
 
     if (!res.ok) {
       let errDetail = `HTTP ${res.status}`;
