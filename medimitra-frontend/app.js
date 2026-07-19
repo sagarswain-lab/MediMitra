@@ -1634,7 +1634,14 @@ async function saveHealthProfile() {
         allergies, chronic_conditions, current_medications, past_surgeries,
         emergency_contact_name, emergency_contact_phone, emergency_contact_relation })
     });
-    if (!res.ok) throw new Error('Save failed');
+    if (!res.ok) {
+      let errorMsg = `Save failed (HTTP ${res.status})`;
+      try {
+        const errBody = await res.json();
+        errorMsg = errBody.detail || errorMsg;
+      } catch {}
+      throw new Error(errorMsg);
+    }
     showToast('Health profile saved! AI features will now be personalized for you ✅', 'success');
     _showProfileUnsaved(false);
     // Re-trigger lifestyle autofill if that section is active
@@ -1642,7 +1649,8 @@ async function saveHealthProfile() {
       autofillLifestyleFromProfile();
     }
   } catch (e) {
-    showToast('Failed to save health profile.', 'error'); console.error(e);
+    showToast(`Failed to save health profile: ${e.message}`, 'error'); 
+    console.error('Profile save error:', e);
   } finally { hideLoading(); }
 }
 
