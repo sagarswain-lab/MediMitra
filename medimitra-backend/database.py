@@ -148,18 +148,33 @@ def get_db() -> Session:
 def get_connection():
     """
     Legacy function for raw SQL compatibility.
-    Returns a raw DB-API connection for existing code.
+    Returns a raw DB-API connection that supports dict-like row access.
     """
-    conn = engine.raw_connection()
-    # Add row_factory for dict-like access (SQLite compatibility)
     if "sqlite" in str(engine.url):
+        # SQLite: use sqlite3 with Row factory
         import sqlite3
+        conn = engine.raw_connection()
         conn.row_factory = sqlite3.Row
+        return conn
     else:
-        # PostgreSQL with psycopg2 - enable dict cursor
+        # PostgreSQL: use psycopg2 with RealDictCursor
+        # We need to create connection directly with psycopg2 to set cursor_factory
+        import psycopg2
         import psycopg2.extras
-        conn.cursor_factory = psycopg2.extras.RealDictCursor
-    return conn
+        from urllib.parse import urlparse
+        
+        # Parse DATABASE_URL to get connection parameters
+        url = urlparse(str(engine.url))
+        conn = psycopg2.connect(
+            host=url.hostname,
+            port=url.port,
+            user=url.username,
+            password=url.password,
+            database=url.path[1:],  # Remove leading /
+            cursor_factory=psycopg2.extras.RealDictCursor
+        )
+        conn.autocommit = False  # Match SQLAlchemy behavior
+        return conn
 
 
 def init_db():
