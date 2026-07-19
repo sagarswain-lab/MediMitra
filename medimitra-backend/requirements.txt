@@ -11,3 +11,5 @@ mem0ai
 google-auth
 python-jose[cryptography]
 reportlab
+psycopg2-binary==2.9.9
+sqlalchemy==2.0.23
