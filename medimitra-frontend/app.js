@@ -1434,6 +1434,21 @@ function _resetProfileForm() {
 
 async function initGoogleSignIn() {
   try {
+    // Wait for Google SDK to load (it's loaded with async defer)
+    if (typeof google === 'undefined' || !google.accounts) {
+      console.log('Waiting for Google SDK to load...');
+      // Retry every 100ms for up to 5 seconds
+      for (let i = 0; i < 50; i++) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+        if (typeof google !== 'undefined' && google.accounts) break;
+      }
+      
+      if (typeof google === 'undefined' || !google.accounts) {
+        console.error('Google SDK failed to load');
+        return;
+      }
+    }
+
     if (!GOOGLE_CLIENT_ID) {
       console.warn('Google Client ID not configured.');
       return;
