@@ -1432,12 +1432,8 @@
         display: none !important;
       }
 
-      .emergency-btn .emergency-mobile-label {
-        display: none !important;
-      }
-
-      .emergency-btn i {
-        font-size: 18px !important;
+      .emergency-btn span {
+        font-size: 20px !important;
       }
     }
 
