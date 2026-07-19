@@ -20,48 +20,35 @@ let userSession = {
 async function signInWithGoogle() {
   const btn = document.getElementById('google-signin-main-btn');
   const originalHTML = btn.innerHTML;
-  
+
   btn.disabled = true;
-  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Preparing...';
-  
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Connecting...';
+
   try {
     // Step 1: Wake up the server
-    let attempts = 0;
-    const maxAttempts = 10;
     let serverReady = false;
-    
-    while (attempts < maxAttempts && !serverReady) {
+    for (let i = 0; i < 10 && !serverReady; i++) {
       try {
-        btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Connecting... (${attempts * 3}s)`;
-        
-        const res = await fetch(`${API}/health`, {
-          method: 'GET',
-          signal: AbortSignal.timeout(5000)
-        });
-        
-        if (res.ok) {
-          serverReady = true;
-          break;
-        }
+        const res = await fetch(`${API}/health`, { signal: AbortSignal.timeout(5000) });
+        if (res.ok) { serverReady = true; break; }
       } catch (e) {
-        await new Promise(resolve => setTimeout(resolve, 3000));
-        attempts++;
+        btn.innerHTML = `<i class="fas fa-spinner fa-spin"></i> Waking server... (${i * 3}s)`;
+        await new Promise(r => setTimeout(r, 3000));
       }
     }
-    
-    if (!serverReady) {
-      throw new Error('Server is taking too long to start. Please try again in a minute.');
-    }
-    
-    // Step 2: Initialize Google Sign-In
+    if (!serverReady) throw new Error('Server is taking too long. Please try again.');
+
+    // Step 2: Ensure Google SDK is loaded
     btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Loading Google...';
     await initGoogleSignIn();
-    
-    // Step 3: Trigger Google popup
-    btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Opening sign-in...';
-    await new Promise(resolve => setTimeout(resolve, 500));
-    google.accounts.id.prompt();
-    
+
+    // Step 3: Reset button immediately so user sees it's ready
+    btn.disabled = false;
+    btn.innerHTML = originalHTML;
+
+    // Step 4: Open the full Google OAuth popup window
+    _openGoogleOAuthPopup();
+
   } catch (e) {
     showToast(e.message || 'Failed to sign in. Please try again.', 'error');
     btn.disabled = false;
@@ -69,23 +56,60 @@ async function signInWithGoogle() {
   }
 }
 
-function googleSignInTrigger() {
-  // Try Google One Tap prompt first
+function _openGoogleOAuthPopup() {
+  // Use OAuth2 code-flow to open the full Google account picker popup
   try {
-    google.accounts.id.prompt((notification) => {
-      if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-        // One Tap suppressed — try clicking the rendered button in profile section
-        const profileBtnIframe = document.querySelector('#google-signin-btn-profile iframe');
-        if (profileBtnIframe) { profileBtnIframe.click(); return; }
-        // Last resort — navigate to profile section so the sign-in button is visible
-        showSection('profile');
-        showToast('Please click "Sign In with Google" below', 'info');
+    const client = google.accounts.oauth2.initCodeClient({
+      client_id: GOOGLE_CLIENT_ID,
+      scope: 'openid email profile',
+      ux_mode: 'popup',
+      callback: async (response) => {
+        // Exchange code for credential via backend, or use id_token directly
+        // For our flow we need the id_token; fall back to id.prompt if code flow not ideal
+        await _fallbackIdPrompt();
       }
     });
+    // Actually we want id_token not code, so use the rendered button click approach
+    throw new Error('use_id_button');
   } catch (e) {
-    showSection('profile');
-    showToast('Please click "Sign In with Google" below', 'info');
+    _fallbackIdPrompt();
   }
+}
+
+function _fallbackIdPrompt() {
+  // Revoke any existing session so Google shows the full account picker
+  try { google.accounts.id.revoke(userSession.email || '', () => {}); } catch (_) {}
+
+  // Cancel any pending One Tap
+  try { google.accounts.id.cancel(); } catch (_) {}
+
+  // Re-initialize to force the account picker
+  google.accounts.id.initialize({
+    client_id: GOOGLE_CLIENT_ID,
+    callback: handleCredentialResponse,
+    ux_mode: 'popup',
+    auto_select: false,
+    cancel_on_tap_outside: true
+  });
+
+  // Click the SDK-rendered button which opens the full Google auth popup
+  const profileBtnIframe = document.querySelector('#google-signin-btn-profile iframe');
+  if (profileBtnIframe) {
+    profileBtnIframe.click();
+    return;
+  }
+
+  // Last resort: One Tap prompt
+  google.accounts.id.prompt((n) => {
+    if (n.isNotDisplayed() || n.isSkippedMoment()) {
+      showSection('profile');
+      showToast('Please click "Sign In with Google" below', 'info');
+    }
+  });
+}
+
+function googleSignInTrigger() {
+  _fallbackIdPrompt();
 }
 
 function showSection(id) {
@@ -1597,8 +1621,19 @@ async function handleCredentialResponse(response) {
 }
 
 function signOut() {
+  // Revoke Google session so the full account picker appears on next sign-in
+  try { google.accounts.id.revoke(userSession.email || '', () => {}); } catch (_) {}
+  try { google.accounts.id.cancel(); } catch (_) {}
+
   userSession = { jwt: null, user_id: null, email: null, name: null, picture: null };
   localStorage.removeItem('medimitra_jwt');
+
+  // Reset the sign-in button back to its original state
+  const mainBtn = document.getElementById('google-signin-main-btn');
+  if (mainBtn) {
+    mainBtn.disabled = false;
+    mainBtn.innerHTML = '<i class="fab fa-google"></i> Sign in with Google';
+  }
 
   // Reset profile section
   document.getElementById('profile-logged-out').style.display = 'block';
