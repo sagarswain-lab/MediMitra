@@ -5,6 +5,9 @@ const API = (location.hostname === 'localhost' || location.hostname === '127.0.0
   ? 'http://localhost:8001'
   : 'https://medimitra-api-05bj.onrender.com';
 
+// Google Client ID — public identifier, safe to include in frontend code
+const GOOGLE_CLIENT_ID = '550634503705-05eagvomk8aduanfqv2dp2k0tq5s2eth.apps.googleusercontent.com';
+
 // In-memory Session State (JWT is NOT stored in localStorage/sessionStorage)
 let userSession = {
   jwt: null,
@@ -1431,17 +1434,13 @@ function _resetProfileForm() {
 
 async function initGoogleSignIn() {
   try {
-    const res = await fetch(`${API}/api/auth/config`);
-    if (!res.ok) throw new Error('Could not fetch config');
-    const config = await res.json();
-
-    if (!config.google_client_id || config.google_client_id === 'your_google_client_id_here') {
+    if (!GOOGLE_CLIENT_ID) {
       console.warn('Google Client ID not configured.');
       return;
     }
 
     google.accounts.id.initialize({
-      client_id: config.google_client_id,
+      client_id: GOOGLE_CLIENT_ID,
       callback: handleCredentialResponse,
       ux_mode: 'popup',
       auto_select: false,
@@ -1468,45 +1467,13 @@ async function initGoogleSignIn() {
 }
 
 async function handleCredentialResponse(response) {
-  showLoading('Connecting to server...');
-  
+  showLoading('Signing in with Google...');
   try {
-    // Step 1: Wake up the server with a health check (Render cold start can take 30-60s)
-    let serverReady = false;
-    let attempts = 0;
-    const maxAttempts = 6;
-    
-    while (attempts < maxAttempts && !serverReady) {
-      try {
-        if (attempts > 0) {
-          showLoading(`Waking up server... (${attempts}/${maxAttempts})`);
-          await new Promise(resolve => setTimeout(resolve, 5000)); // Wait 5s between attempts
-        }
-        
-        const healthCheck = await fetch(`${API}/health`, {
-          method: 'GET',
-          signal: AbortSignal.timeout(10000) // 10 second timeout for health check
-        });
-        
-        if (healthCheck.ok) {
-          serverReady = true;
-          break;
-        }
-      } catch (e) {
-        attempts++;
-        if (attempts >= maxAttempts) {
-          throw new Error('Server not responding. It may be waking up - please wait 30 seconds and try again.');
-        }
-      }
-    }
-    
-    // Step 2: Now authenticate with Google
-    showLoading('Signing in with Google...');
     const res = await fetch(`${API}/api/auth/google`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ id_token: response.credential }),
-      signal: AbortSignal.timeout(30000) // 30 second timeout
+      signal: AbortSignal.timeout(60000) // 60s timeout for cold starts
     });
 
     if (!res.ok) {
@@ -1551,7 +1518,11 @@ async function handleCredentialResponse(response) {
       autofillLifestyleFromProfile();
     }
   } catch (e) {
-    showToast(`Authentication failed: ${e.message}`, 'error');
+    if (e.name === 'TimeoutError' || e.message.includes('fetch')) {
+      showToast('Server is waking up, please try signing in again in 30 seconds.', 'warning');
+    } else {
+      showToast(`Authentication failed: ${e.message}`, 'error');
+    }
     console.error('Auth error:', e);
   } finally {
     hideLoading();
