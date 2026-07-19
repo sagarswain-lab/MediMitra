@@ -14,8 +14,11 @@ if not DATABASE_URL:
     # Fallback to SQLite for local development
     BASE_DIR = os.path.dirname(os.path.abspath(__file__))
     DATABASE_URL = f"sqlite:///{os.path.join(BASE_DIR, 'medimitra.db')}"
+    SQLITE_DB_PATH = os.path.join(BASE_DIR, 'medimitra.db')
     print(f"[database] Using local SQLite: {DATABASE_URL}")
 else:
+    SQLITE_DB_PATH = None
+if DATABASE_URL and "sqlite" not in DATABASE_URL:
     print(f"[database] Using PostgreSQL: {DATABASE_URL[:20]}...")
 
 # Create SQLAlchemy engine
@@ -145,58 +148,144 @@ def get_db() -> Session:
         db.close()
 
 
+class _PostgreSQLCursorWrapper:
+    """
+    Wraps a psycopg2 RealDictCursor to add SQLite-compatible helpers:
+    - `lastrowid`: populated after INSERT ... RETURNING id
+    """
+    def __init__(self, cursor):
+        self._cur = cursor
+        self.lastrowid = None
+
+    def fetchone(self):
+        return self._cur.fetchone()
+
+    def fetchall(self):
+        return self._cur.fetchall()
+
+    def __iter__(self):
+        return iter(self._cur)
+
+    def __getattr__(self, name):
+        return getattr(self._cur, name)
+
+
+def _adapt_sql(sql, params):
+    """
+    Translate SQLite-style queries to PostgreSQL-compatible ones:
+    - Replace ? placeholders with %s
+    - Inject RETURNING id after INSERT statements so lastrowid works
+    Returns (adapted_sql, adapted_params, needs_returning)
+    """
+    adapted = sql.replace("?", "%s")
+    needs_returning = False
+    # Only inject RETURNING if it's a plain INSERT without an existing RETURNING clause
+    stripped = adapted.strip().upper()
+    if stripped.startswith("INSERT") and "RETURNING" not in stripped:
+        adapted = adapted.rstrip().rstrip(";") + " RETURNING id"
+        needs_returning = True
+    return adapted, params, needs_returning
+
+
 class PostgreSQLConnectionWrapper:
     """
-    Wrapper for psycopg2 connection that adds execute() method like sqlite3.
-    Makes PostgreSQL connections behave like SQLite connections for backward compatibility.
+    Wrapper for psycopg2 connection that makes it behave like sqlite3:
+    - Translates ? → %s placeholders automatically
+    - Supports lastrowid via RETURNING id injection on INSERTs
+    - Returns dict-like rows (RealDictCursor)
     """
     def __init__(self, psycopg2_conn):
         self._conn = psycopg2_conn
-        self._cursor = None
-    
+        self._last_cursor = None
+
     def execute(self, sql, params=None):
-        """Execute SQL and return cursor with results"""
+        """Execute SQL (translating ? → %s) and return a cursor wrapper."""
         import psycopg2.extras
-        self._cursor = self._conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
-        if params:
-            self._cursor.execute(sql, params)
+        raw_cur = self._conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        adapted_sql, adapted_params, needs_returning = _adapt_sql(sql, params)
+
+        if adapted_params:
+            raw_cur.execute(adapted_sql, adapted_params)
         else:
-            self._cursor.execute(sql)
-        return self._cursor
-    
+            raw_cur.execute(adapted_sql)
+
+        wrapper = _PostgreSQLCursorWrapper(raw_cur)
+        if needs_returning:
+            row = raw_cur.fetchone()
+            if row:
+                wrapper.lastrowid = row["id"]
+
+        self._last_cursor = wrapper
+        return wrapper
+
+    def cursor(self, *args, **kwargs):
+        """Return a cursor wrapper (used by feedback.py which calls conn.cursor())."""
+        import psycopg2.extras
+        raw_cur = self._conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor)
+        return _RawCursorAdapter(raw_cur)
+
     def commit(self):
         return self._conn.commit()
-    
+
     def rollback(self):
         return self._conn.rollback()
-    
+
     def close(self):
-        if self._cursor:
-            self._cursor.close()
         return self._conn.close()
-    
-    def cursor(self, *args, **kwargs):
-        import psycopg2.extras
-        return self._conn.cursor(cursor_factory=psycopg2.extras.RealDictCursor, *args, **kwargs)
-    
+
     def __getattr__(self, name):
-        # Delegate all other attributes to the wrapped connection
         return getattr(self._conn, name)
+
+
+class _RawCursorAdapter:
+    """
+    Wraps a psycopg2 cursor obtained via conn.cursor() so that raw
+    cursor.execute(sql, params) calls also get ? → %s translation.
+    """
+    def __init__(self, cur):
+        self._cur = cur
+        self.lastrowid = None
+
+    def execute(self, sql, params=None):
+        adapted_sql, adapted_params, needs_returning = _adapt_sql(sql, params)
+        if adapted_params:
+            self._cur.execute(adapted_sql, adapted_params)
+        else:
+            self._cur.execute(adapted_sql)
+        if needs_returning:
+            row = self._cur.fetchone()
+            if row:
+                self.lastrowid = row["id"]
+
+    def fetchone(self):
+        return self._cur.fetchone()
+
+    def fetchall(self):
+        return self._cur.fetchall()
+
+    def __iter__(self):
+        return iter(self._cur)
+
+    def __getattr__(self, name):
+        return getattr(self._cur, name)
 
 
 def get_connection():
     """
     Legacy function for raw SQL compatibility.
     Returns a connection that supports conn.execute() for both SQLite and PostgreSQL.
+    Rows are dict-accessible via row['column'] on both backends.
     """
     if "sqlite" in str(engine.url):
-        # SQLite: use sqlite3 with Row factory
+        # SQLite: open a NATIVE sqlite3 connection directly so row_factory works.
+        # We deliberately avoid engine.raw_connection() because SQLAlchemy wraps it
+        # in a proxy that silently ignores the row_factory assignment.
         import sqlite3
-        conn = engine.raw_connection()
+        conn = sqlite3.connect(SQLITE_DB_PATH, check_same_thread=False)
         conn.row_factory = sqlite3.Row
         return conn
     else:
-        # PostgreSQL: wrap connection to add execute() method
+        # PostgreSQL: wrap psycopg2 connection with our compatibility adapter.
         conn = engine.raw_connection()
         return PostgreSQLConnectionWrapper(conn)
 
