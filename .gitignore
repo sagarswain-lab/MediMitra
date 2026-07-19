@@ -1,3 +1,7 @@
+# ═══════════════════════════════════════════
+# ROOT GITIGNORE (applies to entire project)
+# ═══════════════════════════════════════════
+
 # IDE settings
 .vscode/
 .idea/
@@ -7,7 +11,11 @@
 .DS_Store
 Thumbs.db
 
-# Python
+# ═══════════════════════════════════════════
+# PYTHON / BACKEND
+# ═══════════════════════════════════════════
+
+# Python bytecode
 __pycache__/
 *.pyc
 *.pyo
@@ -19,7 +27,7 @@ __pycache__/
 dist/
 build/
 
-# Environment variables
+# Environment variables (API keys, secrets)
 .env
 .env.*
 !.env.example
@@ -32,7 +40,27 @@ build/
 # Logs
 *.log
 
-# Temporary files
+# Runtime caches
+medimitra-backend/fonts_cache/
+
+# Documentation files (local only, not in Git)
+POSTGRESQL_MIGRATION.md
+DEPLOYMENT_CHECKLIST.md
+
+# ═══════════════════════════════════════════
+# FRONTEND (if needed)
+# ═══════════════════════════════════════════
+
+node_modules/
+.next/
+.nuxt/
+dist/
+.cache/
+
+# ═══════════════════════════════════════════
+# TEMPORARY FILES
+# ═══════════════════════════════════════════
+
 *.tmp
 *.bak
 *.swp
