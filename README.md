@@ -190,7 +190,7 @@ Emergency:  Contact name · Phone · Relationship
 |---|---|
 | FastAPI (Python) | REST API framework |
 | Groq Llama 3.3 70B | Text AI — symptoms, lifestyle, drug interaction |
-| Groq Llama 4 Scout (Vision) | Multimodal AI — prescription reader, medicine scanner |
+| Google Gemini (gemini-3.5-flash) | Multimodal AI — prescription reader, medicine scanner |
 | ReportLab | PDF generation (symptom reports, 7-day plans, health card with profile picture) |
 | SQLite3 | Lightweight local database (users, profiles, history) |
 | Pydantic v2 | Request/response validation with coercion validators |

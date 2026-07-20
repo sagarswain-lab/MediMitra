@@ -23,6 +23,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 # ── Model names ──────────────────────────────────────────────
+TEXT_MODEL = "llama-3.3-70b-versatile"
 VISION_MODEL = "gemini-3.5-flash"           # Google Gemini — confirmed working vision model
 
 # ── Key rotation ─────────────────────────────────────────────
